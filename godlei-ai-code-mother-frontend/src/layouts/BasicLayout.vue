@@ -33,6 +33,7 @@ const router = useRouter()
 
 const menuItems = computed<HeaderMenuItem[]>(() => [
   { key: '/', label: '首页' },
+  { key: '/about', label: '关于' },
 ])
 
 const selectedKeys = computed(() => {
