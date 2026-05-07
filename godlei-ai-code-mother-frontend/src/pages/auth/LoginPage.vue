@@ -1,0 +1,135 @@
+<template>
+  <div class="auth-card glass-card">
+    <div class="auth-card-header">
+      <p class="card-tip">Welcome Back</p>
+      <h2>登录系统</h2>
+      <p class="card-description">登录后即可进入首页、个人中心，以及管理员专属的用户与权限管理页面。</p>
+    </div>
+
+    <a-form
+      layout="vertical"
+      :model="formState"
+      @finish="handleSubmit"
+    >
+      <a-form-item
+        label="用户账号"
+        name="userAccount"
+        :rules="[{ required: true, message: '请输入用户账号' }]"
+      >
+        <a-input
+          v-model:value="formState.userAccount"
+          size="large"
+          placeholder="请输入用户账号"
+          autocomplete="username"
+        />
+      </a-form-item>
+
+      <a-form-item
+        label="登录密码"
+        name="userPassword"
+        :rules="[{ required: true, message: '请输入登录密码' }]"
+      >
+        <a-input-password
+          v-model:value="formState.userPassword"
+          size="large"
+          placeholder="请输入登录密码"
+          autocomplete="current-password"
+        />
+      </a-form-item>
+
+      <a-form-item class="submit-item">
+        <a-button
+          block
+          type="primary"
+          size="large"
+          html-type="submit"
+          :loading="actionLoading"
+        >
+          立即登录
+        </a-button>
+      </a-form-item>
+    </a-form>
+
+    <div class="auth-card-footer">
+      <span>还没有账号？</span>
+      <RouterLink to="/auth/register">去注册</RouterLink>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { storeToRefs } from 'pinia'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { DEFAULT_HOME_ROUTE } from '@/router/routes'
+import { useLoginUserStore } from '@/stores/loginUser'
+
+const route = useRoute()
+const router = useRouter()
+const loginUserStore = useLoginUserStore()
+const { actionLoading } = storeToRefs(loginUserStore)
+
+const formState = reactive<API.UserLoginRequest>({
+  userAccount: typeof route.query.account === 'string' ? route.query.account : '',
+  userPassword: '',
+})
+
+const handleSubmit = async () => {
+  const loginSuccess = await loginUserStore.login(formState)
+
+  if (!loginSuccess) {
+    return
+  }
+
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : DEFAULT_HOME_ROUTE
+  void router.push(redirect)
+}
+</script>
+
+<style scoped>
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  padding: clamp(30px, 5vw, 46px);
+}
+
+.auth-card-header {
+  margin-bottom: 28px;
+}
+
+.card-tip {
+  margin: 0 0 10px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(28px, 4vw, 38px);
+}
+
+.card-description {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.submit-item {
+  margin-bottom: 0;
+}
+
+.auth-card-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  color: #64748b;
+}
+</style>

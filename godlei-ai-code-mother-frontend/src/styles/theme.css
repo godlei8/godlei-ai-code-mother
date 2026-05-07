@@ -1,0 +1,69 @@
+:root {
+  color-scheme: light;
+  font-family:
+    'Segoe UI Variable',
+    'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+  --app-bg:
+    radial-gradient(circle at top right, rgb(191 219 254 / 28%), transparent 28%),
+    radial-gradient(circle at bottom left, rgb(209 250 229 / 30%), transparent 25%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4f7 100%);
+  --card-bg: rgb(255 255 255 / 88%);
+  --card-border: rgb(148 163 184 / 16%);
+  --card-shadow: 0 24px 60px rgb(15 23 42 / 10%);
+  --text-strong: #0f172a;
+  --text-main: #334155;
+  --text-muted: #64748b;
+  --primary: #155eef;
+  --primary-strong: #1244c2;
+  --success: #0f766e;
+  --danger: #dc2626;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-main);
+  background: var(--app-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: var(--primary);
+}
+
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+:where(.ant-btn-primary) {
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: 0 12px 24px rgb(37 99 235 / 20%);
+}
+
+:where(.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker) {
+  border-radius: 14px !important;
+}
+
+:where(.ant-table-wrapper .ant-table) {
+  border-radius: 18px;
+}
