@@ -1,25 +1,21 @@
 <template>
   <div class="preview-frame glass-card">
-    <div class="frame-header">
-      <div>
-        <p class="frame-label">Live Preview</p>
-        <h3>{{ title }}</h3>
-      </div>
-      <a v-if="src" :href="src" target="_blank" rel="noreferrer">新窗口打开</a>
-    </div>
+    <PageSectionHeader eyebrow="Live Preview" :title="title" title-tag="h3" class="frame-header">
+      <template #extra>
+        <div class="frame-actions">
+          <slot name="actions" />
+          <a v-if="src" :href="src" target="_blank" rel="noreferrer">新窗口打开</a>
+        </div>
+      </template>
+    </PageSectionHeader>
 
     <div class="frame-shell">
-      <AppEmptyState
-        v-if="!src"
-        title="预览尚未就绪"
-        :description="emptyDescription"
-        icon="WEB"
-      />
+      <AppEmptyState v-if="!src" title="预览尚未就绪" :description="emptyDescription" icon="WEB" />
 
       <AppEmptyState
         v-else-if="hasError"
         title="预览加载失败"
-        description="当前预览页没有成功加载，你可以稍后重试，或在新窗口中打开检查。"
+        description="当前预览页没有成功加载，你可以稍后重试，或者在新窗口中打开排查。"
         icon="ERR"
       />
 
@@ -46,6 +42,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AppEmptyState from '@/components/app/AppEmptyState.vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -58,8 +55,8 @@ const props = withDefaults(
   {
     src: '',
     loading: false,
-    loadingText: '正在加载最新生成结果…',
-    emptyDescription: '当应用生成完成后，右侧会自动展示可访问的网页效果。',
+    loadingText: '正在加载最新生成结果...',
+    emptyDescription: '当应用生成完成后，右侧会自动展示可访问的网站效果。',
   },
 )
 
@@ -87,41 +84,25 @@ const handleError = () => {
 .preview-frame {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   height: 100%;
-  padding: 24px;
+  padding: 18px;
 }
 
-.frame-header {
+.frame-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.frame-label {
-  margin: 0 0 8px;
-  color: #155eef;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.frame-header h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 22px;
+  align-items: center;
+  gap: 10px;
 }
 
 .frame-shell {
   position: relative;
   flex: 1;
-  min-height: 520px;
+  min-height: 460px;
   overflow: hidden;
-  background: rgb(248 250 252 / 70%);
-  border: 1px solid rgb(148 163 184 / 16%);
-  border-radius: 24px;
+  background: rgb(248 250 252 / 82%);
+  border: 1px solid rgb(148 163 184 / 14%);
+  border-radius: 22px;
 }
 
 .frame-loading {
@@ -154,7 +135,7 @@ const handleError = () => {
 
 @media (max-width: 1100px) {
   .frame-shell {
-    min-height: 360px;
+    min-height: 340px;
   }
 }
 </style>

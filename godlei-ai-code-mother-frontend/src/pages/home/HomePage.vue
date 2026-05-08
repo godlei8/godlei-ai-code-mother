@@ -2,42 +2,45 @@
   <div class="home-page page-stack">
     <section class="hero-section">
       <div class="hero-copy">
-        <p class="hero-eyebrow">一句话 · 生所想</p>
-        <h1>与 AI 对话，创建属于你的网页应用</h1>
-        <p class="hero-description">
-          输入一个提示词，系统会自动创建应用、进入生成对话，并在完成后展示网页预览。你还可以继续对话、部署应用、管理自己的作品，或浏览精选案例获得灵感。
-        </p>
+        <h1>{{ HOME_HERO_TITLE }}</h1>
+        <p class="hero-subtitle">{{ HOME_HERO_SUBTITLE }}</p>
       </div>
 
       <AppPromptComposer
         v-model="createPrompt"
         :loading="createLoading"
-        :suggestions="promptSuggestions"
+        :suggestions="HOME_PROMPT_SUGGESTIONS"
+        :placeholder="HOME_PROMPT_PLACEHOLDER"
         submit-text="立即创建"
-        helper-title="描述功能、页面和交互，越具体越容易生成理想结果"
-        helper-text="支持多行输入；未登录时会先跳转到登录页，并为你保留当前草稿。"
         @submit="handleCreateApp"
       />
     </section>
 
     <section class="list-panel glass-card">
-      <div class="panel-header">
-        <div>
-          <p class="section-eyebrow">My Apps</p>
-          <h2>我的应用</h2>
-          <span>{{ isLogin ? '继续创作、编辑或删除你自己的应用。' : '登录后即可查看并管理自己的应用。' }}</span>
-        </div>
-
-        <a-input-search
-          v-if="isLogin"
-          v-model:value="myQuery.appName"
-          class="section-search"
-          allow-clear
-          placeholder="按应用名称搜索"
-          enter-button="搜索"
-          @search="handleMySearch"
-        />
-      </div>
+      <PageSectionHeader
+        class="panel-header"
+        eyebrow="My Apps"
+        title="我的应用"
+        :description="
+          isLogin
+            ? '继续创作、编辑或删除你自己的应用。'
+            : '登录后即可查看并管理自己的应用。'
+        "
+        title-tag="h2"
+        :show-extra="isLogin"
+      >
+        <template #extra>
+          <a-input-search
+            v-if="isLogin"
+            v-model:value="myQuery.appName"
+            class="section-search"
+            allow-clear
+            placeholder="按应用名称搜索"
+            enter-button="搜索"
+            @search="handleMySearch"
+          />
+        </template>
+      </PageSectionHeader>
 
       <AppEmptyState
         v-if="!isLogin"
@@ -59,8 +62,9 @@
             :key="app.id"
             :app="app"
             :description="getMineDescription(app)"
-            badge="我的作品"
             :actions="mineActions"
+            clickable
+            @select="openDetailModal('mine', app)"
             @action="handleMineAction($event, app)"
           />
         </div>
@@ -86,22 +90,24 @@
     </section>
 
     <section class="list-panel glass-card">
-      <div class="panel-header">
-        <div>
-          <p class="section-eyebrow">Featured Apps</p>
-          <h2>精选应用</h2>
-          <span>浏览平台精选案例，直接复用提示词灵感，或打开本地预览看看生成效果。</span>
-        </div>
-
-        <a-input-search
-          v-model:value="featuredQuery.appName"
-          class="section-search"
-          allow-clear
-          placeholder="按应用名称搜索"
-          enter-button="搜索"
-          @search="handleFeaturedSearch"
-        />
-      </div>
+      <PageSectionHeader
+        class="panel-header"
+        eyebrow="Featured Apps"
+        title="精选应用"
+        description="浏览平台精选案例，直接复用提示词灵感，或打开本地预览看看生成效果。"
+        title-tag="h2"
+      >
+        <template #extra>
+          <a-input-search
+            v-model:value="featuredQuery.appName"
+            class="section-search"
+            allow-clear
+            placeholder="按应用名称搜索"
+            enter-button="搜索"
+            @search="handleFeaturedSearch"
+          />
+        </template>
+      </PageSectionHeader>
 
       <div v-if="featuredLoading" class="card-grid is-loading">
         <a-skeleton v-for="item in 3" :key="item" active class="grid-skeleton" />
@@ -113,8 +119,9 @@
           :key="app.id"
           :app="app"
           :description="getFeaturedDescription(app)"
-          badge="精选"
           :actions="featuredActions"
+          clickable
+          @select="openDetailModal('featured', app)"
           @action="handleFeaturedAction($event, app)"
         />
       </div>
@@ -135,21 +142,43 @@
         />
       </div>
     </section>
+
+    <AppDetailModal
+      :open="detailOpen"
+      :app="detailApp"
+      :description="detailDescription"
+      :preview-url="detailPreviewUrl"
+      :actions="detailActions"
+      @close="detailOpen = false"
+      @action="handleDetailAction"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message, Modal } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-import AppCard, { type AppCardAction } from '@/components/app/AppCard.vue'
+import { addApp, deleteMyApp, listFeaturedAppVoByPage, listMyAppVoByPage } from '@/api/appController'
+import AppCard from '@/components/app/AppCard.vue'
+import AppDetailModal from '@/components/app/AppDetailModal.vue'
+import type { AppActionItem } from '@/components/app/appAction'
 import AppEmptyState from '@/components/app/AppEmptyState.vue'
 import AppPromptComposer from '@/components/app/AppPromptComposer.vue'
-import { addApp, deleteMyApp, listFeaturedAppVoByPage, listMyAppVoByPage } from '@/api/appController'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { getStaticPreviewUrl } from '@/config/env'
+import {
+  HOME_HERO_SUBTITLE,
+  HOME_HERO_TITLE,
+  HOME_PROMPT_PLACEHOLDER,
+  HOME_PROMPT_SUGGESTIONS,
+} from '@/pages/home/homeContent'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { hydrateOwnedAppCreator } from '@/utils/appCard'
 import { buildAppNameFromPrompt, formatAppRelativeTime, savePendingAppPrompt } from '@/utils/appHelpers'
+
+type DetailSource = 'mine' | 'featured'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -157,21 +186,14 @@ const { isLogin } = storeToRefs(loginUserStore)
 
 const HOME_PROMPT_DRAFT_KEY = 'godlei_home_prompt_draft'
 
-const promptSuggestions = [
-  '做一个电商首页，突出爆款推荐、活动专区和下单入口',
-  '帮我生成一个企业官网，包含产品介绍、案例展示和联系表单',
-  '创建一个个人博客，支持文章列表、详情页和关于我页面',
-  '做一个后台管理首页，展示统计卡片、趋势图和快捷操作',
-]
-
-const mineActions: AppCardAction[] = [
+const mineActions: AppActionItem[] = [
   { key: 'chat', label: '继续创作', variant: 'primary' },
   { key: 'edit', label: '编辑' },
   { key: 'preview', label: '预览' },
   { key: 'delete', label: '删除', danger: true },
 ]
 
-const featuredActions: AppCardAction[] = [
+const featuredActions: AppActionItem[] = [
   { key: 'reuse', label: '复用提示词', variant: 'primary' },
   { key: 'preview', label: '打开预览' },
 ]
@@ -184,6 +206,9 @@ const myApps = ref<API.AppVO[]>([])
 const featuredApps = ref<API.AppVO[]>([])
 const myTotal = ref(0)
 const featuredTotal = ref(0)
+const detailOpen = ref(false)
+const detailApp = ref<API.AppVO | null>(null)
+const detailSource = ref<DetailSource>('mine')
 
 const myQuery = reactive<API.AppListPageRequest>({
   pageNum: 1,
@@ -199,6 +224,28 @@ const featuredQuery = reactive<API.AppListPageRequest>({
   sortField: 'priority',
   sortOrder: 'desc',
   appName: '',
+})
+
+const detailDescription = computed(() => {
+  if (!detailApp.value) {
+    return ''
+  }
+
+  return detailSource.value === 'mine'
+    ? getMineDescription(detailApp.value)
+    : getFeaturedDescription(detailApp.value)
+})
+
+const detailPreviewUrl = computed(() => {
+  if (!detailApp.value?.id || !detailApp.value.codeGenType) {
+    return ''
+  }
+
+  return getStaticPreviewUrl(detailApp.value.codeGenType, detailApp.value.id)
+})
+
+const detailActions = computed(() => {
+  return detailSource.value === 'mine' ? mineActions : featuredActions
 })
 
 const persistPromptDraft = (value: string) => {
@@ -227,11 +274,17 @@ const clearPromptDraft = () => {
 }
 
 const getMineDescription = (app: API.AppVO) => {
-  return `更新于 ${formatAppRelativeTime(app.updateTime || app.createTime)}`
+  return `最近更新于 ${formatAppRelativeTime(app.updateTime || app.createTime)}`
 }
 
 const getFeaturedDescription = (app: API.AppVO) => {
   return app.initPrompt?.slice(0, 54) || `创建于 ${formatAppRelativeTime(app.createTime)}`
+}
+
+const openDetailModal = (source: DetailSource, app: API.AppVO) => {
+  detailSource.value = source
+  detailApp.value = app
+  detailOpen.value = true
 }
 
 const openPreview = (app: API.AppVO) => {
@@ -273,7 +326,9 @@ const loadMyApps = async () => {
       message.error(res.data?.message || '我的应用加载失败')
       return
     }
-    myApps.value = res.data.data.records ?? []
+    myApps.value = (res.data.data.records ?? []).map((item) =>
+      hydrateOwnedAppCreator(item, loginUserStore.loginUser),
+    )
     myTotal.value = res.data.data.totalRow ?? 0
   } catch {
     message.error('我的应用加载失败，请稍后重试')
@@ -365,6 +420,7 @@ const handleMineAction = (action: string, app: API.AppVO) => {
             return
           }
 
+          detailOpen.value = false
           message.success('应用已删除')
           if ((myApps.value.length ?? 0) === 1 && (myQuery.pageNum ?? 1) > 1) {
             myQuery.pageNum = (myQuery.pageNum ?? 1) - 1
@@ -389,6 +445,22 @@ const handleFeaturedAction = (action: string, app: API.AppVO) => {
   if (action === 'preview') {
     openPreview(app)
   }
+}
+
+const handleDetailAction = (action: string) => {
+  if (!detailApp.value) {
+    return
+  }
+
+  const app = detailApp.value
+  detailOpen.value = false
+
+  if (detailSource.value === 'mine') {
+    handleMineAction(action, app)
+    return
+  }
+
+  handleFeaturedAction(action, app)
 }
 
 const handleMySearch = () => {
@@ -445,71 +517,73 @@ onMounted(() => {
 
 <style scoped>
 .home-page {
-  gap: 24px;
+  gap: 26px;
 }
 
 .hero-section {
+  position: relative;
   display: grid;
   gap: 22px;
+  padding: clamp(18px, 3.2vw, 34px) clamp(20px, 4vw, 40px) clamp(22px, 3vw, 32px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 18%, rgb(147 197 253 / 0.82), transparent 22%),
+    radial-gradient(circle at 82% 24%, rgb(96 165 250 / 0.46), transparent 20%),
+    radial-gradient(circle at 72% 72%, rgb(103 232 249 / 0.24), transparent 22%),
+    linear-gradient(135deg, #f8fbff 0%, #eef5ff 38%, #edf6ff 64%, #f9fcff 100%);
+  border-radius: 36px;
+  box-shadow: 0 26px 64px rgb(148 163 184 / 18%);
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.04)),
+    linear-gradient(90deg, rgb(148 163 184 / 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgb(148 163 184 / 0.08) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+  mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.9), rgb(0 0 0 / 0.2));
+  pointer-events: none;
 }
 
 .hero-copy {
-  max-width: 920px;
-  padding: 16px 4px 0;
-}
-
-.hero-eyebrow,
-.section-eyebrow {
-  margin: 0 0 12px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.hero-copy h1,
-.panel-header h2 {
-  margin: 0;
-  color: #0f172a;
-  letter-spacing: -0.04em;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 
 .hero-copy h1 {
-  font-size: clamp(40px, 5vw, 68px);
-  line-height: 1.03;
+  margin: 0;
+  color: transparent;
+  font-size: clamp(28px, 5.2vw, 60px);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.98;
+  background: linear-gradient(135deg, #0f172a 0%, #2563eb 38%, #38bdf8 72%, #0f172a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
-.hero-description {
-  max-width: 860px;
-  margin: 18px 0 0;
-  color: #64748b;
-  font-size: 16px;
-  line-height: 1.9;
+.hero-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: clamp(16px, 1.7vw, 20px);
+  line-height: 1.7;
 }
 
 .list-panel {
   padding: 24px;
+  background: rgb(255 255 255 / 82%);
 }
 
 .panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
   margin-bottom: 20px;
-}
-
-.panel-header h2 {
-  font-size: 30px;
-  line-height: 1.15;
-}
-
-.panel-header span {
-  display: inline-block;
-  margin-top: 10px;
-  color: #64748b;
-  line-height: 1.75;
 }
 
 .section-search {
@@ -545,8 +619,9 @@ onMounted(() => {
 }
 
 @media (max-width: 820px) {
-  .panel-header {
-    flex-direction: column;
+  .hero-section {
+    padding: 16px 16px 20px;
+    border-radius: 28px;
   }
 
   .section-search {
@@ -555,6 +630,11 @@ onMounted(() => {
 
   .card-grid {
     grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .card-grid :deep(.app-card) {
+    width: min(100%, 520px);
   }
 
   .list-panel {

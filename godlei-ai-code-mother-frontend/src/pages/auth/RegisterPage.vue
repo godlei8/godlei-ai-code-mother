@@ -1,16 +1,14 @@
 <template>
-  <div class="auth-card glass-card">
-    <div class="auth-card-header">
-      <p class="card-tip">Create Account</p>
-      <h2>注册账号</h2>
-      <p class="card-description">账号注册成功后会回到登录页，继续进入完整的前端后台管理流程。</p>
-    </div>
-
-    <a-form
-      layout="vertical"
-      :model="formState"
-      @finish="handleSubmit"
-    >
+  <AuthCardShell
+    eyebrow="Create Account"
+    eyebrow-tone="success"
+    title="注册账号"
+    description="账号注册成功后会回到登录页，继续进入完整的前后端管理流程。"
+    footer-text="已经有账号？"
+    footer-link-text="去登录"
+    footer-link-to="/auth/login"
+  >
+    <a-form layout="vertical" :model="formState" @finish="handleSubmit">
       <a-form-item
         label="用户账号"
         name="userAccount"
@@ -71,18 +69,14 @@
         </a-button>
       </a-form-item>
     </a-form>
-
-    <div class="auth-card-footer">
-      <span>已经有账号？</span>
-      <RouterLink to="/auth/login">去登录</RouterLink>
-    </div>
-  </div>
+  </AuthCardShell>
 </template>
 
 <script setup lang="ts">
 import { reactive } from 'vue'
 import { storeToRefs } from 'pinia'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import AuthCardShell from '@/components/auth/AuthCardShell.vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 
 const router = useRouter()
@@ -120,49 +114,7 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.auth-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  min-height: 100%;
-  padding: clamp(30px, 5vw, 46px);
-}
-
-.auth-card-header {
-  margin-bottom: 28px;
-}
-
-.card-tip {
-  margin: 0 0 10px;
-  color: #0f766e;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-h2 {
-  margin: 0;
-  color: #0f172a;
-  font-size: clamp(28px, 4vw, 38px);
-}
-
-.card-description {
-  margin: 14px 0 0;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.75;
-}
-
 .submit-item {
   margin-bottom: 0;
-}
-
-.auth-card-footer {
-  display: flex;
-  gap: 8px;
-  margin-top: 24px;
-  color: #64748b;
 }
 </style>

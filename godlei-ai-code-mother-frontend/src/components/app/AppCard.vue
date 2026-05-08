@@ -1,26 +1,37 @@
 <template>
-  <article class="app-card">
+  <article
+    class="app-card"
+    :class="{ 'is-clickable': clickable }"
+    :role="clickable ? 'button' : undefined"
+    :tabindex="clickable ? 0 : undefined"
+    @click="handleSelect"
+    @keydown.enter.prevent="handleSelect"
+    @keydown.space.prevent="handleSelect"
+  >
     <div class="card-visual">
-      <img v-if="app.cover" :src="app.cover" :alt="app.appName || '应用封面'" />
+      <img v-if="app.cover" :src="app.cover" :alt="profile.title" />
       <div v-else class="visual-fallback">
         <span>{{ codeGenLabel }}</span>
-        <strong>{{ app.appName || '未命名应用' }}</strong>
+        <strong>{{ profile.title }}</strong>
       </div>
     </div>
 
     <div class="card-body">
-      <div class="card-head">
-        <div>
-          <h3>{{ app.appName || '未命名应用' }}</h3>
-          <p>{{ description }}</p>
+      <div class="card-profile">
+        <a-avatar v-if="profile.avatarUrl" :src="profile.avatarUrl" :size="46" />
+        <a-avatar v-else class="profile-avatar-fallback" :size="46">
+          {{ profile.initials }}
+        </a-avatar>
+
+        <div class="profile-copy">
+          <h3>{{ profile.title }}</h3>
+          <p>{{ profile.creatorName }}</p>
         </div>
-        <a-tag v-if="badge" color="blue">{{ badge }}</a-tag>
       </div>
 
       <div class="card-meta">
+        <span v-if="description">{{ description }}</span>
         <span>{{ codeGenLabel }}</span>
-        <span v-if="showPriority && app.priority !== undefined">优先级 {{ app.priority }}</span>
-        <span v-if="showUserId && app.userId">创建者 {{ app.userId }}</span>
       </div>
 
       <div v-if="actions.length" class="card-actions">
@@ -29,8 +40,9 @@
           :key="action.key"
           :type="action.variant === 'primary' ? 'primary' : 'default'"
           :danger="action.danger"
+          :disabled="action.disabled"
           size="small"
-          @click="$emit('action', action.key)"
+          @click.stop="emit('action', action.key)"
         >
           {{ action.label }}
         </a-button>
@@ -41,38 +53,39 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { AppActionItem } from '@/components/app/appAction'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
-
-export interface AppCardAction {
-  key: string
-  label: string
-  danger?: boolean
-  variant?: 'default' | 'primary'
-}
+import { resolveAppCardProfile } from '@/utils/appCard'
 
 const props = withDefaults(
   defineProps<{
     app: API.AppVO
     description?: string
-    badge?: string
-    actions?: AppCardAction[]
-    showPriority?: boolean
-    showUserId?: boolean
+    actions?: AppActionItem[]
+    clickable?: boolean
   }>(),
   {
     description: '',
-    badge: '',
     actions: () => [],
-    showPriority: false,
-    showUserId: false,
+    clickable: false,
   },
 )
 
-defineEmits<{
+const emit = defineEmits<{
   action: [key: string]
+  select: []
 }>()
 
 const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
+const profile = computed(() => resolveAppCardProfile(props.app))
+
+const handleSelect = () => {
+  if (!props.clickable) {
+    return
+  }
+
+  emit('select')
+}
 </script>
 
 <style scoped>
@@ -87,9 +100,28 @@ const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
   box-shadow: var(--card-shadow-soft);
 }
 
+.app-card.is-clickable {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.app-card.is-clickable:hover {
+  border-color: rgb(37 99 235 / 22%);
+  box-shadow: 0 18px 40px rgb(15 23 42 / 10%);
+  transform: translateY(-2px);
+}
+
+.app-card.is-clickable:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 35%);
+  outline-offset: 2px;
+}
+
 .card-visual {
   position: relative;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 7.5;
   overflow: hidden;
   background:
     linear-gradient(140deg, rgb(219 234 254 / 92%), rgb(240 253 250 / 86%)),
@@ -97,10 +129,10 @@ const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
 }
 
 .card-visual img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .visual-fallback {
@@ -136,34 +168,52 @@ const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
   flex: 1;
   flex-direction: column;
   gap: 14px;
-  padding: 18px 18px 20px;
+  padding: 16px 16px 18px;
 }
 
-.card-head {
+.card-profile {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
-.card-head h3 {
+.profile-avatar-fallback {
+  color: #eff6ff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #155eef 0%, #1244c2 100%);
+  box-shadow: 0 10px 18px rgb(37 99 235 / 18%);
+}
+
+.profile-copy {
+  min-width: 0;
+}
+
+.profile-copy h3 {
   margin: 0;
+  overflow: hidden;
   color: #0f172a;
-  font-size: 20px;
-  line-height: 1.25;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.card-head p {
-  margin: 8px 0 0;
+.profile-copy p {
+  margin: 4px 0 0;
+  overflow: hidden;
   color: #64748b;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: auto;
 }
 
 .card-meta span {
@@ -180,5 +230,12 @@ const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: auto;
+}
+
+@media (max-width: 820px) {
+  .card-profile {
+    align-items: flex-start;
+  }
 }
 </style>

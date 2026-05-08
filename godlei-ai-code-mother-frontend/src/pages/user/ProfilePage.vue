@@ -22,9 +22,7 @@
           </p>
 
           <div class="profile-actions">
-            <a-button type="primary" @click="openEditModal">
-              编辑资料
-            </a-button>
+            <a-button type="primary" @click="openEditModal">编辑资料</a-button>
           </div>
         </div>
       </div>
@@ -37,29 +35,13 @@
     </section>
 
     <section class="profile-details glass-card">
-      <div class="section-heading">
-        <h3>资料详情</h3>
-        <p>当前登录态信息来自全局 Pinia store，普通用户编辑会走兼容草稿分支。</p>
-      </div>
+      <PageSectionHeader
+        title="资料详情"
+        description="当前登录态信息来自全局 Pinia store，普通用户编辑会先走兼容草稿流程。"
+        title-tag="h3"
+      />
 
-      <div class="details-grid">
-        <article class="detail-card">
-          <span>用户昵称</span>
-          <strong>{{ loginUser?.userName || '-' }}</strong>
-        </article>
-        <article class="detail-card">
-          <span>账号标识</span>
-          <strong>{{ loginUser?.userAccount || '-' }}</strong>
-        </article>
-        <article class="detail-card">
-          <span>创建时间</span>
-          <strong>{{ loginUser?.createTime || '-' }}</strong>
-        </article>
-        <article class="detail-card">
-          <span>更新时间</span>
-          <strong>{{ loginUser?.updateTime || '-' }}</strong>
-        </article>
-      </div>
+      <DetailStatsGrid :items="detailItems" class="details-grid" />
     </section>
 
     <UserFormModal
@@ -83,6 +65,9 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ACCESS_ROLE_LABEL } from '@/access/accessConstants'
 import UserFormModal from '@/components/UserFormModal.vue'
+import DetailStatsGrid from '@/components/common/DetailStatsGrid.vue'
+import type { DetailStatItem } from '@/components/common/DetailStatsGrid.vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 
 const loginUserStore = useLoginUserStore()
@@ -97,6 +82,13 @@ const profileInitialValues = computed(() => ({
   userAvatar: loginUser.value?.userAvatar,
   userProfile: loginUser.value?.userProfile,
 }))
+
+const detailItems = computed<DetailStatItem[]>(() => [
+  { label: '用户昵称', value: loginUser.value?.userName },
+  { label: '账号标识', value: loginUser.value?.userAccount },
+  { label: '创建时间', value: loginUser.value?.createTime },
+  { label: '更新时间', value: loginUser.value?.updateTime },
+])
 
 const profileModeMessage = computed(() => {
   return accessRole.value === 'admin'
@@ -141,15 +133,13 @@ const handleSubmit = async (payload: { userName?: string; userAvatar?: string; u
   gap: 16px;
 }
 
-.profile-headline h3,
-.section-heading h3 {
+.profile-headline h3 {
   margin: 0;
   color: #0f172a;
   font-size: 24px;
 }
 
-.profile-headline p,
-.section-heading p {
+.profile-headline p {
   margin: 8px 0 0;
   color: #64748b;
   line-height: 1.75;
@@ -167,42 +157,12 @@ const handleSubmit = async (payload: { userName?: string; userAvatar?: string; u
 }
 
 .details-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
   margin-top: 18px;
-}
-
-.detail-card {
-  padding: 18px;
-  background: rgb(255 255 255 / 76%);
-  border: 1px solid rgb(148 163 184 / 15%);
-  border-radius: 20px;
-  box-shadow: var(--card-shadow-soft);
-}
-
-.detail-card span {
-  display: block;
-  margin-bottom: 10px;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.detail-card strong {
-  color: #0f172a;
-  line-height: 1.6;
 }
 
 @media (max-width: 980px) {
   .profile-main {
     flex-direction: column;
-  }
-
-  .details-grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -2,7 +2,7 @@
   <div class="chat-input glass-card">
     <a-textarea
       :value="modelValue"
-      :auto-size="{ minRows: 4, maxRows: 7 }"
+      :auto-size="{ minRows: 3, maxRows: 6 }"
       :maxlength="2000"
       :placeholder="placeholder"
       @update:value="$emit('update:modelValue', $event)"
@@ -11,9 +11,7 @@
 
     <div class="chat-input-footer">
       <span>Enter 发送，Shift + Enter 换行</span>
-      <a-button type="primary" :loading="loading" @click="$emit('submit')">
-        发送消息
-      </a-button>
+      <a-button type="primary" :loading="loading" @click="$emit('submit')">发送消息</a-button>
     </div>
   </div>
 </template>
@@ -27,7 +25,7 @@ const props = withDefaults(
   }>(),
   {
     loading: false,
-    placeholder: '继续告诉 AI 你想生成或修改什么…',
+    placeholder: '请描述你想生成的网站，越详细效果越好哦',
   },
 )
 
@@ -48,20 +46,34 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 <style scoped>
 .chat-input {
-  padding: 18px;
+  padding: 14px;
+  background: rgb(255 255 255 / 78%);
+}
+
+:deep(.ant-input) {
+  padding: 14px 16px;
+  border: none;
+  background: rgb(248 250 252 / 96%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 85%);
+}
+
+:deep(.ant-input:focus) {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    0 0 0 3px rgb(96 165 250 / 16%);
 }
 
 .chat-input-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 14px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .chat-input-footer span {
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 @media (max-width: 640px) {

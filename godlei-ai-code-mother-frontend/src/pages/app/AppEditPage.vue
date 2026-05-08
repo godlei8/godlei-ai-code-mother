@@ -1,37 +1,26 @@
 <template>
   <div class="app-edit-page page-stack">
     <section v-if="pageReady" class="edit-panel glass-card">
-      <div class="panel-head">
-        <div>
-          <p class="panel-label">App Detail</p>
-          <h1>{{ isAdminMode ? '管理员编辑应用' : '编辑我的应用' }}</h1>
-          <span>{{ isAdminMode ? '管理员可以修改名称、封面和优先级。' : '普通用户当前仅支持修改应用名称。' }}</span>
-        </div>
+      <PageSectionHeader
+        eyebrow="App Detail"
+        :title="isAdminMode ? '管理员编辑应用' : '编辑我的应用'"
+        :description="
+          isAdminMode
+            ? '管理员可以修改应用名称、封面和优先级。'
+            : '普通用户当前仅支持修改应用名称。'
+        "
+        title-tag="h1"
+        class="panel-head"
+      >
+        <template #extra>
+          <a-space wrap>
+            <a-button @click="router.push(`/app/chat/${appId}`)">返回对话页</a-button>
+            <a-button v-if="previewUrl" @click="handleOpenPreview">打开预览</a-button>
+          </a-space>
+        </template>
+      </PageSectionHeader>
 
-        <a-space wrap>
-          <a-button @click="router.push(`/app/chat/${appId}`)">返回对话页</a-button>
-          <a-button v-if="previewUrl" @click="handleOpenPreview">打开预览</a-button>
-        </a-space>
-      </div>
-
-      <div class="summary-grid">
-        <article class="summary-card">
-          <span>应用编号</span>
-          <strong>{{ appDetail?.id || '-' }}</strong>
-        </article>
-        <article class="summary-card">
-          <span>生成模式</span>
-          <strong>{{ codeGenLabel }}</strong>
-        </article>
-        <article class="summary-card">
-          <span>创建者</span>
-          <strong>{{ appDetail?.userId || '-' }}</strong>
-        </article>
-        <article class="summary-card">
-          <span>最近更新</span>
-          <strong>{{ appDetail?.updateTime || '-' }}</strong>
-        </article>
-      </div>
+      <DetailStatsGrid :items="summaryItems" />
 
       <a-form layout="vertical" :model="formState" class="edit-form">
         <a-form-item label="应用名称">
@@ -62,10 +51,19 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
+import DetailStatsGrid from '@/components/common/DetailStatsGrid.vue'
+import type { DetailStatItem } from '@/components/common/DetailStatsGrid.vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { getAppByIdAdmin, getAppVo, updateAppAdmin, updateMyApp } from '@/api/appController'
+import { getUserVoById } from '@/api/userController'
 import { getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { resolveAppDetailLoadMode, resolveAppEditorMode } from '@/utils/appHelpers'
+import {
+  formatAppDateTime,
+  resolveAppCreatorDisplayName,
+  resolveAppDetailLoadMode,
+  resolveAppEditorMode,
+} from '@/utils/appHelpers'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
 
 const route = useRoute()
@@ -76,6 +74,7 @@ const { accessRole, loginUser } = storeToRefs(loginUserStore)
 const pageReady = ref(false)
 const submitLoading = ref(false)
 const appDetail = ref<API.AppVO | API.App | null>(null)
+const creatorDisplayName = ref('-')
 const formState = reactive({
   appName: '',
   cover: '',
@@ -101,11 +100,45 @@ const previewUrl = computed(() => {
 })
 
 const codeGenLabel = computed(() => formatCodeGenType(appDetail.value?.codeGenType))
+const formattedUpdateTime = computed(() => formatAppDateTime(appDetail.value?.updateTime))
+
+const summaryItems = computed<DetailStatItem[]>(() => [
+  { label: '应用编号', value: appDetail.value?.id },
+  { label: '生成模式', value: codeGenLabel.value },
+  { label: '创建者', value: creatorDisplayName.value },
+  { label: '最近更新时间', value: formattedUpdateTime.value },
+])
 
 const syncFormState = () => {
   formState.appName = appDetail.value?.appName || ''
   formState.cover = appDetail.value?.cover || ''
   formState.priority = appDetail.value?.priority ?? 0
+}
+
+const syncCreatorDisplayName = async (detail: API.AppVO | API.App) => {
+  const creatorUserName = 'userName' in detail ? detail.userName : undefined
+
+  creatorDisplayName.value = resolveAppCreatorDisplayName(
+    detail.userId,
+    creatorUserName,
+    loginUser.value,
+  )
+
+  if (creatorDisplayName.value !== '-' || !detail.userId) {
+    return
+  }
+
+  try {
+    const res = await getUserVoById({ id: detail.userId })
+    if (res.data?.code !== 0 || !res.data.data) {
+      return
+    }
+
+    creatorDisplayName.value =
+      res.data.data.userName?.trim() || res.data.data.userAccount?.trim() || creatorDisplayName.value
+  } catch {
+    // Ignore creator fetch failures and keep fallback text.
+  }
 }
 
 const loadAppDetail = async () => {
@@ -132,6 +165,7 @@ const loadAppDetail = async () => {
       return false
     }
 
+    await syncCreatorDisplayName(res.data.data)
     syncFormState()
     return true
   } catch {
@@ -200,63 +234,8 @@ onMounted(async () => {
   padding: 26px;
 }
 
-.panel-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.panel-label {
-  margin: 0 0 10px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.panel-head h1 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 32px;
-  line-height: 1.1;
-}
-
-.panel-head span {
-  display: inline-block;
-  margin-top: 10px;
-  color: #64748b;
-  line-height: 1.75;
-}
-
 .summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
   margin-top: 22px;
-}
-
-.summary-card {
-  padding: 18px;
-  background: rgb(255 255 255 / 78%);
-  border: 1px solid rgb(148 163 184 / 16%);
-  border-radius: 20px;
-}
-
-.summary-card span {
-  display: block;
-  margin-bottom: 10px;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.summary-card strong {
-  color: #0f172a;
-  line-height: 1.5;
 }
 
 .edit-form {
@@ -269,21 +248,7 @@ onMounted(async () => {
   gap: 12px;
 }
 
-@media (max-width: 980px) {
-  .panel-head {
-    flex-direction: column;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 640px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-
   .form-actions {
     flex-direction: column-reverse;
   }

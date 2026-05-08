@@ -89,6 +89,20 @@ a {
   gap: 22px;
 }
 
+.management-filter-panel,
+.management-table-panel {
+  padding: 24px;
+}
+
+.management-filter-form {
+  display: flex;
+  gap: 12px 0;
+}
+
+.management-section-header {
+  margin-bottom: 18px;
+}
+
 :where(.ant-btn-primary) {
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   box-shadow: 0 12px 24px rgb(37 99 235 / 20%);
@@ -100,4 +114,10 @@ a {
 
 :where(.ant-table-wrapper .ant-table) {
   border-radius: 18px;
+}
+
+@media (max-width: 860px) {
+  .management-section-header {
+    margin-bottom: 16px;
+  }
 }

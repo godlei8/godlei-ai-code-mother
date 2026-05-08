@@ -69,6 +69,8 @@ declare namespace API {
     deployedTime?: string
     priority?: number
     userId?: string | number
+    userName?: string
+    userAvatar?: string
     editTime?: string
     createTime?: string
     updateTime?: string

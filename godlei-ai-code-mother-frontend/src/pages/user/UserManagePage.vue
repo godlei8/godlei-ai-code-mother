@@ -1,7 +1,7 @@
 <template>
   <div class="page-stack">
-    <section class="glass-card filter-panel">
-      <a-form layout="inline" :model="queryForm" class="filter-form">
+    <section class="glass-card management-filter-panel">
+      <a-form layout="inline" :model="queryForm" class="management-filter-form">
         <a-form-item label="用户账号">
           <a-input v-model:value="queryForm.userAccount" placeholder="按账号筛选" />
         </a-form-item>
@@ -22,32 +22,30 @@
 
         <a-form-item>
           <a-space>
-            <a-button type="primary" @click="handleSearch">
-              查询
-            </a-button>
-            <a-button @click="handleReset">
-              重置
-            </a-button>
+            <a-button type="primary" @click="handleSearch">查询</a-button>
+            <a-button @click="handleReset">重置</a-button>
           </a-space>
         </a-form-item>
       </a-form>
     </section>
 
-    <section class="glass-card table-panel">
-      <div class="table-toolbar">
-        <div>
-          <h3>用户列表</h3>
-          <p>当前页面由管理员使用，支持新增、编辑、删除以及分页查询用户。</p>
-        </div>
-
-        <a-button
-          v-if="access.canAccessAction(ACCESS_ACTION.USER_CREATE)"
-          type="primary"
-          @click="openCreateModal"
-        >
-          新增用户
-        </a-button>
-      </div>
+    <section class="glass-card management-table-panel">
+      <PageSectionHeader
+        class="management-section-header"
+        title="用户列表"
+        description="管理员可以筛选、新增、编辑和删除用户。"
+        title-tag="h3"
+      >
+        <template #extra>
+          <a-button
+            v-if="access.canAccessAction(ACCESS_ACTION.USER_CREATE)"
+            type="primary"
+            @click="openCreateModal"
+          >
+            新增用户
+          </a-button>
+        </template>
+      </PageSectionHeader>
 
       <a-table
         row-key="id"
@@ -72,12 +70,8 @@
 
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-button type="link" @click="openEditModal(record)">
-                编辑
-              </a-button>
-              <a-button danger type="link" @click="handleDelete(record)">
-                删除
-              </a-button>
+              <a-button type="link" @click="openEditModal(record)">编辑</a-button>
+              <a-button danger type="link" @click="handleDelete(record)">删除</a-button>
             </a-space>
           </template>
         </template>
@@ -106,6 +100,7 @@ import type { TablePaginationConfig } from 'ant-design-vue'
 import { ACCESS_ACTION } from '@/access/accessConstants'
 import { useAccess } from '@/access/useAccess'
 import UserFormModal from '@/components/UserFormModal.vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { addUser, deleteUser, listUserVoByPage, updateUser } from '@/api/userController'
 
 type TableRecord = API.UserVO
@@ -305,41 +300,3 @@ onMounted(() => {
   void loadData()
 })
 </script>
-
-<style scoped>
-.filter-panel,
-.table-panel {
-  padding: 24px;
-}
-
-.filter-form {
-  display: flex;
-  gap: 12px 0;
-}
-
-.table-toolbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.table-toolbar h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 22px;
-}
-
-.table-toolbar p {
-  margin: 10px 0 0;
-  color: #64748b;
-  line-height: 1.75;
-}
-
-@media (max-width: 860px) {
-  .table-toolbar {
-    flex-direction: column;
-  }
-}
-</style>

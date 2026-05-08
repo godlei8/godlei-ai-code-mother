@@ -22,6 +22,8 @@ const normalizeIdValue = (id?: string | number) => {
   return String(id)
 }
 
+const padDateSegment = (value: number) => String(value).padStart(2, '0')
+
 const getPendingPromptStorageKey = (appId: string | number) => {
   return `${APP_PENDING_PROMPT_KEY_PREFIX}${appId}`
 }
@@ -124,6 +126,46 @@ export const formatAppRelativeTime = (input?: string, now = new Date()) => {
   }
 
   return input.slice(0, 10)
+}
+
+export const formatAppDateTime = (input?: string) => {
+  if (!input) {
+    return '-'
+  }
+
+  const targetTime = new Date(input)
+  if (Number.isNaN(targetTime.getTime())) {
+    return '-'
+  }
+
+  const year = targetTime.getFullYear()
+  const month = padDateSegment(targetTime.getMonth() + 1)
+  const date = padDateSegment(targetTime.getDate())
+  const hours = padDateSegment(targetTime.getHours())
+  const minutes = padDateSegment(targetTime.getMinutes())
+  const seconds = padDateSegment(targetTime.getSeconds())
+
+  return `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`
+}
+
+export const resolveAppCreatorDisplayName = (
+  appUserId?: string | number,
+  appUserName?: string,
+  currentLoginUser?: API.LoginUserVO | null,
+) => {
+  const creatorName = appUserName?.trim()
+  if (creatorName) {
+    return creatorName
+  }
+
+  if (
+    currentLoginUser?.id !== undefined &&
+    normalizeIdValue(currentLoginUser.id) === normalizeIdValue(appUserId)
+  ) {
+    return currentLoginUser.userName?.trim() || currentLoginUser.userAccount?.trim() || '-'
+  }
+
+  return '-'
 }
 
 export const savePendingAppPrompt = (appId: string | number, prompt: string) => {

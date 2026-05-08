@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildAppNameFromPrompt,
+  formatAppDateTime,
   formatAppRelativeTime,
+  resolveAppCreatorDisplayName,
   resolveAppDetailLoadMode,
   resolveAppEditorMode,
 } from '../appHelpers'
@@ -98,5 +100,46 @@ describe('formatAppRelativeTime', () => {
 
   it('falls back for missing times', () => {
     expect(formatAppRelativeTime(undefined, now)).toBe('-')
+  })
+})
+
+describe('formatAppDateTime', () => {
+  it('formats iso timestamps into yyyy-mm-dd hh:mm:ss', () => {
+    expect(formatAppDateTime('2026-05-08T23:12:15')).toBe('2026-05-08 23:12:15')
+  })
+
+  it('falls back for invalid times', () => {
+    expect(formatAppDateTime('bad-value')).toBe('-')
+  })
+})
+
+describe('resolveAppCreatorDisplayName', () => {
+  it('prefers the creator userName from the app payload', () => {
+    expect(
+      resolveAppCreatorDisplayName('10', '平台官方', {
+        id: '10',
+        userName: '当前用户',
+        userAccount: 'current-account',
+      } as API.LoginUserVO),
+    ).toBe('平台官方')
+  })
+
+  it('falls back to the current login user name when the app belongs to the current user', () => {
+    expect(
+      resolveAppCreatorDisplayName('10', undefined, {
+        id: '10',
+        userName: '当前用户',
+        userAccount: 'current-account',
+      } as API.LoginUserVO),
+    ).toBe('当前用户')
+  })
+
+  it('falls back to user account before raw user id', () => {
+    expect(
+      resolveAppCreatorDisplayName('10', undefined, {
+        id: '10',
+        userAccount: 'current-account',
+      } as API.LoginUserVO),
+    ).toBe('current-account')
   })
 })

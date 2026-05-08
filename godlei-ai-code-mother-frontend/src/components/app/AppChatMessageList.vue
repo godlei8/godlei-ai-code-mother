@@ -10,8 +10,20 @@
       class="message-item"
       :class="item.role === 'user' ? 'is-user' : 'is-assistant'"
     >
-      <div class="message-bubble">
-        <p>{{ item.content || (item.role === 'assistant' ? '正在生成…' : '') }}</p>
+      <div class="message-row">
+        <img
+          v-if="item.role === 'assistant'"
+          class="assistant-avatar"
+          :src="aiAvatar"
+          alt="AI"
+        />
+        <div class="message-bubble">
+          <AppMarkdownContent
+            v-if="item.role === 'assistant'"
+            :content="item.content || '正在生成中...'"
+          />
+          <p v-else>{{ item.content }}</p>
+        </div>
       </div>
     </article>
   </div>
@@ -19,6 +31,8 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
+import AppMarkdownContent from './AppMarkdownContent.vue'
+import aiAvatar from '@/assets/ai-chat-avatar.svg'
 
 export interface AppChatMessage {
   id: string
@@ -83,6 +97,26 @@ watch(
   justify-content: flex-end;
 }
 
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.message-item.is-user .message-row {
+  justify-content: flex-end;
+}
+
+.assistant-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-self: flex-start;
+  border-radius: 50%;
+  box-shadow: 0 10px 18px rgb(15 23 42 / 12%);
+}
+
 .message-bubble {
   max-width: min(100%, 86%);
   padding: 14px 16px;
@@ -101,6 +135,7 @@ watch(
   background: rgb(255 255 255 / 88%);
   border: 1px solid rgb(148 163 184 / 18%);
   border-top-left-radius: 8px;
+  overflow: hidden;
 }
 
 .message-bubble p {

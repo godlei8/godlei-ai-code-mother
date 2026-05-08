@@ -19,6 +19,15 @@ describe('consumeSseChunk', () => {
     ])
   })
 
+  it('unwraps json payloads produced by the backend sse wrapper', () => {
+    const accumulator = createSseAccumulator()
+
+    expect(consumeSseChunk(accumulator, 'data: {"d":"hello"}\n\ndata: {"d":" world"}\n\n')).toEqual([
+      'hello',
+      ' world',
+    ])
+  })
+
   it('waits for incomplete chunks before emitting an event', () => {
     const accumulator = createSseAccumulator()
 
@@ -33,5 +42,12 @@ describe('flushSseAccumulator', () => {
 
     expect(consumeSseChunk(accumulator, 'data: final message')).toEqual([])
     expect(flushSseAccumulator(accumulator)).toEqual(['final message'])
+  })
+
+  it('unwraps the final buffered json payload on stream close', () => {
+    const accumulator = createSseAccumulator()
+
+    expect(consumeSseChunk(accumulator, 'data: {"d":"final"}')).toEqual([])
+    expect(flushSseAccumulator(accumulator)).toEqual(['final'])
   })
 })

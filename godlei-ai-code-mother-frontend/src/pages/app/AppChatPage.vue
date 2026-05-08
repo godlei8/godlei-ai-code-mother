@@ -2,20 +2,13 @@
   <div class="app-chat-page page-stack">
     <section v-if="pageReady" class="chat-layout">
       <div class="chat-column glass-card">
-        <div class="chat-header">
-          <div>
-            <p class="chat-label">App Workspace</p>
-            <h1>{{ appDetail?.appName || '未命名应用' }}</h1>
-            <span>{{ headerDescription }}</span>
-          </div>
-
-          <div class="chat-actions">
-            <a-button @click="router.push(`/app/edit/${appId}`)">编辑信息</a-button>
-            <a-button type="primary" :loading="deploying" @click="handleDeploy">
-              部署应用
-            </a-button>
-          </div>
-        </div>
+        <PageSectionHeader
+          eyebrow="App Workspace"
+          :title="appDetail?.appName || '未命名应用'"
+          :description="headerDescription"
+          title-tag="h1"
+          class="chat-header"
+        />
 
         <AppChatMessageList :messages="messages" />
 
@@ -24,7 +17,12 @@
           <a :href="deployedUrl" target="_blank" rel="noreferrer">{{ deployedUrl }}</a>
         </div>
 
-        <AppChatInput v-model="draftMessage" :loading="sending" @submit="handleSend" />
+        <AppChatInput
+          v-model="draftMessage"
+          :loading="sending"
+          placeholder="请描述你想生成的网站，越详细效果越好。"
+          @submit="handleSend"
+        />
       </div>
 
       <div class="preview-column">
@@ -33,7 +31,50 @@
           :src="previewSrc"
           :loading="sending && !previewReady"
           :empty-description="previewEmptyDescription"
-        />
+        >
+          <template #actions>
+            <a-button @click="router.push(`/app/edit/${appId}`)">编辑信息</a-button>
+            <a-button
+              class="preview-deploy-button"
+              type="primary"
+              :loading="deploying"
+              :disabled="!appDetail?.id"
+              :title="deployButtonTitle"
+              :aria-label="deployButtonText"
+              @click="handleDeploy"
+            >
+              <svg
+                class="preview-deploy-icon"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 3.2L15.6 6.4V10.2C15.6 13.6 13.22 16.72 10 17.6C6.78 16.72 4.4 13.6 4.4 10.2V6.4L10 3.2Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M10 6.4V11.2"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M8.2 9.4L10 11.2L11.8 9.4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{{ deployButtonText }}</span>
+            </a-button>
+          </template>
+        </AppPreviewFrame>
       </div>
     </section>
 
@@ -49,6 +90,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppChatInput from '@/components/app/AppChatInput.vue'
 import AppChatMessageList from '@/components/app/AppChatMessageList.vue'
 import AppPreviewFrame from '@/components/app/AppPreviewFrame.vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { deployApp, getAppVo } from '@/api/appController'
 import { API_BASE_URL, getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
@@ -80,15 +122,16 @@ const appId = computed(() => String(route.params.id ?? '').trim())
 
 const headerDescription = computed(() => {
   if (accessRole.value === 'admin') {
-    return '管理员身份也会按应用所有者视角进入对话与预览链路。'
+    return '管理员身份下也会按应用拥有者视角进入对话与预览链路。'
   }
-  return '左侧与 AI 对话生成网页，右侧会在生成完成后自动刷新预览。'
+  return '左侧与 AI 持续对话生成页面，右侧会在生成完成后自动刷新网站预览。'
 })
 
 const previewSrc = computed(() => {
   if (!previewReady.value || !appDetail.value?.id || !appDetail.value.codeGenType) {
     return ''
   }
+
   const baseSrc = getStaticPreviewUrl(appDetail.value.codeGenType, appDetail.value.id)
   return `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}t=${previewVersion.value}`
 })
@@ -104,8 +147,17 @@ const deployedUrl = computed(() => {
   if (deployedUrlFromAction.value) {
     return deployedUrlFromAction.value
   }
+
   const deployKey = appDetail.value?.deployKey
   return deployKey ? getDeployUrl(deployKey) : ''
+})
+
+const deployButtonTitle = computed(() => {
+  return deployedUrl.value ? '重新部署应用' : '部署应用'
+})
+
+const deployButtonText = computed(() => {
+  return deployedUrl.value ? '重新部署' : '部署应用'
 })
 
 const createChatMessage = (role: ChatMessage['role'], content = ''): ChatMessage => ({
@@ -155,10 +207,12 @@ const appendAssistantText = (messageId: string, chunks: string[]) => {
   if (!chunks.length) {
     return
   }
+
   const target = messages.value.find((item) => item.id === messageId)
   if (!target) {
     return
   }
+
   target.content += chunks.join('')
 }
 
@@ -196,6 +250,7 @@ const sendMessage = async (content: string) => {
       if (done) {
         break
       }
+
       const chunk = decoder.decode(value, { stream: true })
       appendAssistantText(assistantMessage.id, consumeSseChunk(accumulator, chunk))
     }
@@ -203,7 +258,7 @@ const sendMessage = async (content: string) => {
     appendAssistantText(assistantMessage.id, flushSseAccumulator(accumulator))
 
     if (!assistantMessage.content) {
-      assistantMessage.content = '生成完成，你可以继续补充修改要求。'
+      assistantMessage.content = '生成完成，你可以继续补充修改需求。'
     }
 
     previewReady.value = true
@@ -265,76 +320,64 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.app-chat-page {
+  gap: 14px;
+}
+
 .chat-layout {
   display: grid;
-  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 14px;
 }
 
 .chat-column {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  min-height: calc(100vh - 190px);
-  padding: 24px;
-}
-
-.chat-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.chat-label {
-  margin: 0 0 10px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.chat-header h1 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 30px;
-  line-height: 1.12;
-}
-
-.chat-header span {
-  display: inline-block;
-  margin-top: 10px;
-  color: #64748b;
-  line-height: 1.75;
-}
-
-.chat-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  gap: 14px;
+  min-height: calc(100vh - 154px);
+  padding: 18px;
 }
 
 .deploy-banner {
-  padding: 14px 16px;
+  padding: 12px 14px;
   color: #0f766e;
   background: rgb(236 253 245 / 88%);
   border: 1px solid rgb(16 185 129 / 16%);
-  border-radius: 18px;
+  border-radius: 16px;
 }
 
 .preview-column {
   min-width: 0;
 }
 
+.preview-column :deep(.frame-actions) {
+  gap: 8px;
+}
+
+.preview-deploy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+
+.preview-deploy-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .preview-column :deep(.preview-frame) {
   position: sticky;
-  top: 96px;
-  min-height: calc(100vh - 190px);
+  top: 84px;
+  min-height: calc(100vh - 154px);
 }
 
 .page-skeleton {
-  padding: 28px;
+  padding: 24px;
 }
 
 @media (max-width: 1180px) {
@@ -349,13 +392,9 @@ onMounted(async () => {
 }
 
 @media (max-width: 720px) {
-  .chat-header {
-    flex-direction: column;
-  }
-
   .chat-column {
     min-height: auto;
-    padding: 20px;
+    padding: 16px;
   }
 }
 </style>

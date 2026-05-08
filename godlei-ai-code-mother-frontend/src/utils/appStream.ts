@@ -8,12 +8,33 @@ export const createSseAccumulator = (): SseAccumulator => ({
   eventDataLines: [],
 })
 
+const normalizeEventPayload = (value: string) => {
+  const trimmedValue = value.trim()
+  if (!trimmedValue.startsWith('{')) {
+    return value
+  }
+
+  try {
+    const parsed = JSON.parse(trimmedValue) as { d?: unknown }
+    if (typeof parsed?.d === 'string') {
+      return parsed.d
+    }
+    if (typeof parsed?.d === 'number') {
+      return String(parsed.d)
+    }
+  } catch {
+    return value
+  }
+
+  return value
+}
+
 const flushEventDataLines = (accumulator: SseAccumulator) => {
   if (accumulator.eventDataLines.length === 0) {
     return ''
   }
 
-  const value = accumulator.eventDataLines.join('\n')
+  const value = normalizeEventPayload(accumulator.eventDataLines.join('\n'))
   accumulator.eventDataLines = []
   return value
 }

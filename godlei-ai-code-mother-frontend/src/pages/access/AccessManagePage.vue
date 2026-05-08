@@ -1,19 +1,14 @@
 <template>
   <div class="page-stack">
     <section class="glass-card role-overview">
-      <div class="section-heading">
-        <div>
-          <h3>角色总览</h3>
-          <p>当前前端权限系统以 `guest / user / admin` 为核心角色，并统一驱动路由与动作控制。</p>
-        </div>
-      </div>
+      <PageSectionHeader
+        title="角色总览"
+        description="当前前端权限系统以 guest / user / admin 为核心角色，并统一驱动路由与动作控制。"
+        title-tag="h3"
+      />
 
       <div class="role-grid">
-        <article
-          v-for="item in roleCards"
-          :key="item.key"
-          class="role-card"
-        >
+        <article v-for="item in roleCards" :key="item.key" class="role-card">
           <span>{{ item.key }}</span>
           <strong>{{ item.label }}</strong>
           <p>{{ item.description }}</p>
@@ -21,20 +16,15 @@
       </div>
     </section>
 
-    <section class="glass-card table-panel">
-      <div class="section-heading">
-        <div>
-          <h3>页面访问矩阵</h3>
-          <p>页面权限读取与路由守卫共用同一份 access 配置，避免说明页和真实行为不一致。</p>
-        </div>
-      </div>
+    <section class="glass-card management-table-panel">
+      <PageSectionHeader
+        class="management-section-header"
+        title="页面访问矩阵"
+        description="页面权限读取与路由守卫共用同一份 access 配置，避免说明页和真实行为不一致。"
+        title-tag="h3"
+      />
 
-      <a-table
-        :columns="matrixColumns"
-        :data-source="routeRows"
-        :pagination="false"
-        row-key="key"
-      >
+      <a-table :columns="matrixColumns" :data-source="routeRows" :pagination="false" row-key="key">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
             <a-tag :color="record[column.key] ? 'green' : 'default'">
@@ -45,20 +35,15 @@
       </a-table>
     </section>
 
-    <section class="glass-card table-panel">
-      <div class="section-heading">
-        <div>
-          <h3>动作权限矩阵</h3>
-          <p>按钮级权限和页面可见性已经解耦，未来后端返回更细粒度权限码时只需替换适配层。</p>
-        </div>
-      </div>
+    <section class="glass-card management-table-panel">
+      <PageSectionHeader
+        class="management-section-header"
+        title="动作权限矩阵"
+        description="按钮级权限和页面可见性已经解耦，未来后端返回更细粒度权限码时只需替换适配层。"
+        title-tag="h3"
+      />
 
-      <a-table
-        :columns="matrixColumns"
-        :data-source="actionRows"
-        :pagination="false"
-        row-key="key"
-      >
+      <a-table :columns="matrixColumns" :data-source="actionRows" :pagination="false" row-key="key">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
             <a-tag :color="record[column.key] ? 'green' : 'default'">
@@ -73,6 +58,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { ACCESS_ACTION_ENTRIES, ACCESS_ROUTE_ENTRIES, canRoleAccessRole } from '@/access/accessConfig'
 import { ACCESS_ROLE, ACCESS_ROLE_LABEL } from '@/access/accessConstants'
 
@@ -126,21 +112,8 @@ const actionRows = computed(() => {
 </script>
 
 <style scoped>
-.role-overview,
-.table-panel {
+.role-overview {
   padding: 24px;
-}
-
-.section-heading h3 {
-  margin: 0;
-  color: #0f172a;
-  font-size: 22px;
-}
-
-.section-heading p {
-  margin: 10px 0 0;
-  color: #64748b;
-  line-height: 1.75;
 }
 
 .role-grid {
