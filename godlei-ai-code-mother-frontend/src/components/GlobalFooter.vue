@@ -1,8 +1,8 @@
 <template>
   <div class="global-footer">
-    <span>Godlei AI Code Mother Frontend</span>
+    <span>Godlei AI Code Mother</span>
     <span class="divider">/</span>
-    <a href="https://www.godlei8.top" target="_blank" rel="noreferrer">godlei</a>
+    <a href="https://www.godlei8.top" target="_blank" rel="noreferrer">Godlei Blog</a>
   </div>
 </template>
 

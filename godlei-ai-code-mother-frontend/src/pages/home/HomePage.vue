@@ -245,9 +245,10 @@ h1 {
 
 .status-card {
   padding: 20px 22px;
-  background: rgb(255 255 255 / 78%);
-  border: 1px solid rgb(148 163 184 / 16%);
+  background: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(148 163 184 / 15%);
   border-radius: 20px;
+  box-shadow: var(--card-shadow-soft);
 }
 
 .status-card span {
@@ -332,9 +333,10 @@ h1 {
 
 .journey-card {
   padding: 22px;
-  background: rgb(255 255 255 / 74%);
-  border: 1px solid rgb(148 163 184 / 16%);
+  background: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(148 163 184 / 15%);
   border-radius: 20px;
+  box-shadow: var(--card-shadow-soft);
 }
 
 .journey-card span {

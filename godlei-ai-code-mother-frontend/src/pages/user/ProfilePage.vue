@@ -175,9 +175,10 @@ const handleSubmit = async (payload: { userName?: string; userAvatar?: string; u
 
 .detail-card {
   padding: 18px;
-  background: rgb(255 255 255 / 70%);
-  border: 1px solid rgb(148 163 184 / 16%);
-  border-radius: 18px;
+  background: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(148 163 184 / 15%);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow-soft);
 }
 
 .detail-card span {

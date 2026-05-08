@@ -11,7 +11,9 @@
     linear-gradient(180deg, #f8fbff 0%, #eef4f7 100%);
   --card-bg: rgb(255 255 255 / 88%);
   --card-border: rgb(148 163 184 / 16%);
-  --card-shadow: 0 24px 60px rgb(15 23 42 / 10%);
+  --card-shadow: 0 22px 56px rgb(15 23 42 / 9%);
+  --card-shadow-soft: 0 14px 34px rgb(15 23 42 / 6%);
+  --card-shadow-floating: 0 12px 28px rgb(15 23 42 / 7%);
   --text-strong: #0f172a;
   --text-main: #334155;
   --text-muted: #64748b;
@@ -27,6 +29,12 @@ body,
   min-height: 100%;
 }
 
+html {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 70%) rgb(255 255 255 / 38%);
+}
+
 body {
   margin: 0;
   color: var(--text-main);
@@ -35,6 +43,32 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgb(255 255 255 / 32%), rgb(226 232 240 / 42%));
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(148 163 184 / 85%), rgb(100 116 139 / 82%));
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(96 165 250 / 88%), rgb(71 85 105 / 88%));
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 a {
