@@ -12,11 +12,11 @@ import {
 
 const PROFILE_DRAFT_STORAGE_KEY = 'godlei_profile_draft'
 
-const getProfileDraftKey = (userId?: number) => {
+const getProfileDraftKey = (userId?: string | number) => {
   return userId ? `${PROFILE_DRAFT_STORAGE_KEY}_${userId}` : ''
 }
 
-const readProfileDraft = (userId?: number): Partial<API.LoginUserVO> => {
+const readProfileDraft = (userId?: string | number): Partial<API.LoginUserVO> => {
   const storageKey = getProfileDraftKey(userId)
 
   if (!storageKey) {
@@ -31,7 +31,7 @@ const readProfileDraft = (userId?: number): Partial<API.LoginUserVO> => {
   }
 }
 
-const writeProfileDraft = (userId: number | undefined, payload: Partial<API.LoginUserVO>) => {
+const writeProfileDraft = (userId: string | number | undefined, payload: Partial<API.LoginUserVO>) => {
   const storageKey = getProfileDraftKey(userId)
 
   if (!storageKey) {
@@ -41,7 +41,7 @@ const writeProfileDraft = (userId: number | undefined, payload: Partial<API.Logi
   window.localStorage.setItem(storageKey, JSON.stringify(payload))
 }
 
-const clearProfileDraft = (userId?: number) => {
+const clearProfileDraft = (userId?: string | number) => {
   const storageKey = getProfileDraftKey(userId)
 
   if (!storageKey) {

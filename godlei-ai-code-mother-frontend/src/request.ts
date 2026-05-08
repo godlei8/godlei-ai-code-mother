@@ -1,11 +1,13 @@
 import axios from 'axios'
 import { message } from 'ant-design-vue'
 import { API_BASE_URL } from '@/config/env'
+import { parseApiJson } from '@/utils/jsonParser'
 
 const myAxios = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
   withCredentials: true,
+  transformResponse: [(data) => parseApiJson(data)],
 })
 
 myAxios.interceptors.request.use(

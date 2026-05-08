@@ -18,6 +18,11 @@ export const ACCESS_ACTION = {
   USER_CREATE: 'user.create',
   USER_EDIT: 'user.edit',
   USER_DELETE: 'user.delete',
+  APP_CREATE: 'app.create',
+  APP_EDIT: 'app.edit',
+  APP_DELETE: 'app.delete',
+  APP_DEPLOY: 'app.deploy',
+  APP_MANAGE_VIEW: 'app.manage.view',
   ACCESS_VIEW: 'access.view',
 } as const
 
@@ -29,6 +34,11 @@ export const ACCESS_ACTION_LABEL: Record<AccessAction, string> = {
   'user.create': '新增用户',
   'user.edit': '编辑用户',
   'user.delete': '删除用户',
+  'app.create': '创建应用',
+  'app.edit': '编辑应用',
+  'app.delete': '删除应用',
+  'app.deploy': '部署应用',
+  'app.manage.view': '查看应用管理',
   'access.view': '查看权限中心',
 }
 

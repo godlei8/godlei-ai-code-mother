@@ -32,6 +32,9 @@ const router = useRouter()
 const isHeaderFloating = ref(false)
 
 const selectedKeys = computed(() => {
+  if (route.path.startsWith('/app/manage')) {
+    return ['/app/manage']
+  }
   if (route.path.startsWith('/user/manage')) {
     return ['/user/manage']
   }

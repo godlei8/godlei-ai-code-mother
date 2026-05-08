@@ -79,6 +79,40 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'app/chat/:id',
+        name: 'app-chat',
+        component: () => import('@/pages/app/AppChatPage.vue'),
+        meta: {
+          title: '应用生成',
+          requiresAuth: true,
+          access: ACCESS_ROLE.USER,
+          hideInMenu: true,
+        },
+      },
+      {
+        path: 'app/edit/:id',
+        name: 'app-edit',
+        component: () => import('@/pages/app/AppEditPage.vue'),
+        meta: {
+          title: '编辑应用',
+          requiresAuth: true,
+          access: ACCESS_ROLE.USER,
+          hideInMenu: true,
+        },
+      },
+      {
+        path: 'app/manage',
+        name: 'app-manage',
+        component: () => import('@/pages/app/AppManagePage.vue'),
+        meta: {
+          title: '应用管理',
+          requiresAuth: true,
+          access: ACCESS_ROLE.ADMIN,
+          menuLabel: '应用管理',
+          menuOrder: 3,
+        },
+      },
+      {
         path: 'user/manage',
         name: 'user-manage',
         component: () => import('@/pages/user/UserManagePage.vue'),
@@ -87,7 +121,7 @@ export const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           access: ACCESS_ROLE.ADMIN,
           menuLabel: '用户管理',
-          menuOrder: 3,
+          menuOrder: 4,
         },
       },
       {
@@ -99,7 +133,7 @@ export const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           access: ACCESS_ROLE.ADMIN,
           menuLabel: '权限管理',
-          menuOrder: 4,
+          menuOrder: 5,
         },
       },
     ],

@@ -1,10 +1,10 @@
 <template>
   <div class="global-header">
     <div class="header-brand" @click="handleNavigate('/')">
-      <div class="brand-badge">GA</div>
+      <div class="brand-badge">AI</div>
       <div class="brand-copy">
-        <strong>Godlei AI</strong>
-        <span>Frontend Console</span>
+        <strong>一句话生所想</strong>
+        <span>Godlei AI App Studio</span>
       </div>
     </div>
 
@@ -14,21 +14,14 @@
       class="header-menu"
       @click="handleMenuClick"
     >
-      <a-menu-item
-        v-for="item in visibleItems"
-        :key="item.key"
-      >
+      <a-menu-item v-for="item in visibleItems" :key="item.key">
         {{ item.label }}
       </a-menu-item>
     </a-menu>
 
     <div v-if="isGuest" class="header-actions">
-      <a-button @click="handleNavigate('/auth/register')">
-        注册
-      </a-button>
-      <a-button type="primary" @click="handleNavigate('/auth/login')">
-        登录
-      </a-button>
+      <a-button @click="handleNavigate('/auth/register')">注册</a-button>
+      <a-button type="primary" @click="handleNavigate('/auth/login')">登录</a-button>
     </div>
 
     <div v-else class="header-actions">
@@ -47,12 +40,8 @@
 
         <template #overlay>
           <a-menu>
-            <a-menu-item key="profile" @click="handleProfileClick">
-              个人中心
-            </a-menu-item>
-            <a-menu-item key="logout" @click="handleLogout">
-              退出登录
-            </a-menu-item>
+            <a-menu-item key="profile" @click="handleProfileClick">个人中心</a-menu-item>
+            <a-menu-item key="logout" @click="handleLogout">退出登录</a-menu-item>
           </a-menu>
         </template>
       </a-dropdown>
@@ -85,21 +74,13 @@ const { loginUser, displayName, accessRole } = storeToRefs(loginUserStore)
 
 const isGuest = computed(() => accessRole.value === ACCESS_ROLE.GUEST)
 
-const visibleItems = computed(() => {
-  return appMenuRoutes.filter((item) => access.canAccessRole(item.access))
-})
+const visibleItems = computed(() => appMenuRoutes.filter((item) => access.canAccessRole(item.access)))
 
-const avatarText = computed(() => {
-  return displayName.value.slice(0, 1).toUpperCase()
-})
+const avatarText = computed(() => displayName.value.slice(0, 1).toUpperCase())
 
-const roleColor = computed(() => {
-  return accessRole.value === ACCESS_ROLE.ADMIN ? 'blue' : 'green'
-})
+const roleColor = computed(() => (accessRole.value === ACCESS_ROLE.ADMIN ? 'blue' : 'green'))
 
-const roleLabel = computed(() => {
-  return ACCESS_ROLE_LABEL[accessRole.value]
-})
+const roleLabel = computed(() => ACCESS_ROLE_LABEL[accessRole.value])
 
 const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
   emit('navigate', String(key))
@@ -142,16 +123,14 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  width: 38px;
+  height: 38px;
   color: #eff6ff;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   background: linear-gradient(135deg, #155eef 0%, #0f766e 100%);
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 12px 22px rgb(15 23 42 / 14%);
 }
 
@@ -220,8 +199,8 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  line-height: 64px;
   min-height: 64px;
+  line-height: 64px;
 }
 
 :deep(.header-menu.ant-menu-horizontal::after) {
@@ -230,14 +209,14 @@ const handleLogout = async () => {
 
 :deep(.header-menu .ant-menu-item) {
   height: 38px;
-  line-height: 38px;
   margin-top: 0;
   margin-bottom: 0;
   padding-inline: 14px;
-  border-radius: 11px;
+  line-height: 38px;
   color: #334155;
   font-size: 14px;
   font-weight: 600;
+  border-radius: 11px;
 }
 
 :deep(.header-menu .ant-menu-item::after) {
@@ -270,10 +249,6 @@ const handleLogout = async () => {
 }
 
 @media (max-width: 640px) {
-  .header-brand {
-    padding-inline-start: 2px;
-  }
-
   .brand-copy strong {
     font-size: 16px;
   }
