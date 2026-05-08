@@ -5,8 +5,8 @@ import com.godlei.godleiaicodemother.model.entity.App;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.model.vo.AppVO;
 import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -22,6 +22,14 @@ public interface AppService extends IService<App> {
      */
     long addApp(AppAddRequest appAddRequest, User loginUser);
 
+    /**
+     * 应用部署
+     *
+     * @param appId     应用 ID
+     * @param loginUser 登录用户
+     * @return 可访问的部署地址
+     */
+    String deployApp(Long appId, User loginUser);
     /**
      * 用户更新自己的应用（仅名称）
      */
@@ -68,11 +76,6 @@ public interface AppService extends IService<App> {
     App getAppByIdAdmin(long id);
 
     /**
-     * 构造管理员列表查询条件
-     */
-    QueryWrapper getAdminQueryWrapper(AppAdminQueryRequest appAdminQueryRequest);
-
-    /**
      * 实体转 VO
      */
     AppVO getAppVO(App app);
@@ -81,4 +84,14 @@ public interface AppService extends IService<App> {
      * 列表实体转 VO
      */
     List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * 根据应用ID、用户消息和登录用户信息生成代码的异步方法
+     *
+     * @param appId     应用ID，用于标识特定的应用
+     * @param message   用户输入的消息内容，将用于生成代码
+     * @param loginUser 当前登录用户的信息，可能用于权限验证或个性化处理
+     * @return 返回一个Flux<String>类型的响应流，包含生成的代码内容
+     */
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 }

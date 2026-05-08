@@ -12,7 +12,7 @@ import java.util.Map;
 public class MybatisFlexCodegen {
 
     // 要生成的表名
-    private static final String[] TABLE_NAMES = {"user"};
+    private static final String[] TABLE_NAMES = {"app"};
 
     public static void main(String[] args) {
         // 获取数据元信息
@@ -64,8 +64,7 @@ public class MybatisFlexCodegen {
         globalConfig.enableService();
         globalConfig.enableServiceImpl();
 
-        // 设置生成 Controller
-        globalConfig.enableController();
+        // 不生成 Controller：与项目中手写 REST（如 AppController）避免同名 Bean 冲突
 
         // 设置生成注释，比如生成的时间和作者，避免后续多余的代码改动
         globalConfig.getJavadocConfig()

@@ -66,7 +66,7 @@ public abstract class CodeFileSaverTemplate<T> {
     }
 
     /**
-     * 构建文件的唯一路径：tmp/code_output/bizType_雪花 ID
+     * 构建文件的唯一路径：tmp/code_output/bizType_APP ID
      *
      * @param appId 应用 ID
      * @return 目录路径

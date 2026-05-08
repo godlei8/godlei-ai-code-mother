@@ -1,5 +1,7 @@
 package com.godlei.godleiaicodemother.controller;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.godlei.godleiaicodemother.annotation.AuthCheck;
 import com.godlei.godleiaicodemother.common.BaseResponse;
 import com.godlei.godleiaicodemother.common.DeleteRequest;
@@ -17,18 +19,20 @@ import com.godlei.godleiaicodemother.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 /**
  * 应用 控制层。
  *
  * @author <a href="https://github.com/godlei8">Godlei</a>
  */
-@RestController
+@RestController("appRestApiController")
 @RequestMapping("/app")
 public class AppController {
 
@@ -38,15 +42,67 @@ public class AppController {
     @Resource
     private UserService userService;
 
+
+    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
+                                                       @RequestParam String message,
+                                                       HttpServletRequest request) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 id 错误");
+        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "初始提示词不能为空");
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        // 调用服务生成代码（SSE 流式返回）
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        return contentFlux
+                .map(chunk -> {
+                    Map<String, String> wrapper = Map.of("d", chunk);
+                    String jsonData = JSONUtil.toJsonStr(wrapper);
+                    return ServerSentEvent.<String>builder()
+                            .data(jsonData)
+                            .build();
+                })
+                .concatWith(Mono.just(
+                        // 发送结束事件
+                        ServerSentEvent.<String>builder()
+                                .event("done")
+                                .data("")
+                                .build()
+                ));
+    }
+
     /**
      * 【用户】创建应用（须填写 initPrompt）
      */
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
-        ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR,"提示词不能为空");
         User loginUser = userService.getLoginUser(request);
         long id = appService.addApp(appAddRequest, loginUser);
         return ResultUtils.success(id);
+    }
+
+    /**
+     * 应用部署
+     *
+     * @param appDeployRequest 部署请求
+     * @param request          请求
+     * @return 部署 URL
+     */
+    @PostMapping("/deploy")
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest request) {
+        // 检查部署请求是否为空
+        ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
+        // 获取应用 ID
+        Long appId = appDeployRequest.getAppId();
+        // 检查应用 ID 是否为空
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        // 调用服务部署应用
+        String deployUrl = appService.deployApp(appId, loginUser);
+        // 返回部署 URL
+        return ResultUtils.success(deployUrl);
     }
 
     /**
