@@ -5,13 +5,16 @@
       :auto-size="{ minRows: 3, maxRows: 6 }"
       :maxlength="2000"
       :placeholder="placeholder"
+      :disabled="disabled"
       @update:value="$emit('update:modelValue', $event)"
       @keydown="handleKeydown"
     />
 
     <div class="chat-input-footer">
       <span>Enter 发送，Shift + Enter 换行</span>
-      <a-button type="primary" :loading="loading" @click="$emit('submit')">发送消息</a-button>
+      <a-button type="primary" :loading="loading" :disabled="disabled" @click="$emit('submit')">
+        发送消息
+      </a-button>
     </div>
   </div>
 </template>
@@ -22,9 +25,11 @@ const props = withDefaults(
     modelValue: string
     loading?: boolean
     placeholder?: string
+    disabled?: boolean
   }>(),
   {
     loading: false,
+    disabled: false,
     placeholder: '请描述你想生成的网站，越详细效果越好哦',
   },
 )
@@ -37,7 +42,7 @@ const emit = defineEmits<{
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
-    if (!props.loading) {
+    if (!props.loading && !props.disabled) {
       emit('submit')
     }
   }

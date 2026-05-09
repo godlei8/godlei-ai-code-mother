@@ -113,6 +113,18 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'chat/history/manage',
+        name: 'chat-history-manage',
+        component: () => import('@/pages/chat/ChatHistoryManagePage.vue'),
+        meta: {
+          title: '对话管理',
+          requiresAuth: true,
+          access: ACCESS_ROLE.ADMIN,
+          menuLabel: '对话管理',
+          menuOrder: 4,
+        },
+      },
+      {
         path: 'user/manage',
         name: 'user-manage',
         component: () => import('@/pages/user/UserManagePage.vue'),
@@ -121,7 +133,7 @@ export const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           access: ACCESS_ROLE.ADMIN,
           menuLabel: '用户管理',
-          menuOrder: 4,
+          menuOrder: 5,
         },
       },
       {
@@ -133,7 +145,7 @@ export const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           access: ACCESS_ROLE.ADMIN,
           menuLabel: '权限管理',
-          menuOrder: 5,
+          menuOrder: 6,
         },
       },
     ],

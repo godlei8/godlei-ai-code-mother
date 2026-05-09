@@ -46,6 +46,12 @@ export const ACCESS_ROUTE_ENTRIES: AccessRouteEntry[] = [
     access: ACCESS_ROLE.ADMIN,
   },
   {
+    key: '/chat/history/manage',
+    label: '对话管理',
+    description: '管理员可以查看、筛选和追踪全站应用对话历史。',
+    access: ACCESS_ROLE.ADMIN,
+  },
+  {
     key: '/access/manage',
     label: '权限管理',
     description: '管理员可以查看前端路由和动作级权限映射。',
@@ -112,6 +118,12 @@ export const ACCESS_ACTION_ENTRIES: AccessActionEntry[] = [
     key: ACCESS_ACTION.APP_MANAGE_VIEW,
     label: '查看应用管理',
     description: '管理员可以进入应用管理页面管理全站应用。',
+    access: ACCESS_ROLE.ADMIN,
+  },
+  {
+    key: ACCESS_ACTION.CHAT_HISTORY_VIEW,
+    label: '查看对话管理',
+    description: '管理员可以进入对话管理页面查看全站对话历史。',
     access: ACCESS_ROLE.ADMIN,
   },
   {

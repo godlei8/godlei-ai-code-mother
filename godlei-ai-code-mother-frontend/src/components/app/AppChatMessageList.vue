@@ -1,5 +1,11 @@
 <template>
   <div ref="containerRef" class="chat-message-list">
+    <div v-if="hasMoreHistory || loadingMoreHistory" class="message-toolbar">
+      <a-button size="small" :loading="loadingMoreHistory" @click="emit('loadMore')">
+        加载更多
+      </a-button>
+    </div>
+
     <div v-if="messages.length === 0" class="message-empty">
       <p>这里会显示你与 AI 的对话过程。</p>
     </div>
@@ -47,10 +53,21 @@ const props = defineProps<{
   messages: AppChatMessage[]
   userAvatar?: string
   userName?: string
+  hasMoreHistory?: boolean
+  loadingMoreHistory?: boolean
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const userAvatarText = computed(() => props.userName?.slice(0, 1).toUpperCase() || 'U')
+const emit = defineEmits<{
+  loadMore: []
+}>()
+
+const previousFirstMessageId = ref('')
+const previousLastMessageId = ref('')
+const previousLength = ref(0)
+const previousScrollHeight = ref(0)
+const previousScrollTop = ref(0)
 
 const scrollToBottom = () => {
   const container = containerRef.value
@@ -63,8 +80,30 @@ const scrollToBottom = () => {
 watch(
   () => props.messages.map((item) => `${item.id}:${item.content}`).join('\u0001'),
   async () => {
+    const container = containerRef.value
+    previousScrollHeight.value = container?.scrollHeight ?? 0
+    previousScrollTop.value = container?.scrollTop ?? 0
+
     await nextTick()
-    scrollToBottom()
+
+    const nextFirstMessageId = props.messages[0]?.id ?? ''
+    const nextLastMessageId = props.messages[props.messages.length - 1]?.id ?? ''
+    const isPrependingOlderMessages =
+      previousLength.value > 0 &&
+      props.messages.length > previousLength.value &&
+      nextLastMessageId === previousLastMessageId.value &&
+      nextFirstMessageId !== previousFirstMessageId.value
+
+    if (isPrependingOlderMessages && containerRef.value) {
+      const heightDiff = containerRef.value.scrollHeight - previousScrollHeight.value
+      containerRef.value.scrollTop = previousScrollTop.value + heightDiff
+    } else {
+      scrollToBottom()
+    }
+
+    previousFirstMessageId.value = nextFirstMessageId
+    previousLastMessageId.value = nextLastMessageId
+    previousLength.value = props.messages.length
   },
   {
     immediate: true,
@@ -82,6 +121,12 @@ watch(
   max-height: 56vh;
   padding: 6px 4px 6px 2px;
   overflow-y: auto;
+}
+
+.message-toolbar {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 2px;
 }
 
 .message-empty {

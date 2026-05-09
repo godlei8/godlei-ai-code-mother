@@ -176,7 +176,7 @@ import {
 } from '@/pages/home/homeContent'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { hydrateOwnedAppCreator } from '@/utils/appCard'
-import { buildAppNameFromPrompt, formatAppDateTime, savePendingAppPrompt } from '@/utils/appHelpers'
+import { buildAppNameFromPrompt, formatAppDateTime } from '@/utils/appHelpers'
 
 type DetailSource = 'mine' | 'featured'
 
@@ -368,7 +368,6 @@ const handleCreateApp = async () => {
       return
     }
 
-    savePendingAppPrompt(res.data.data, prompt)
     clearPromptDraft()
     createPrompt.value = ''
     message.success('应用创建成功，正在进入生成对话')

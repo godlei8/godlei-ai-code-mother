@@ -85,11 +85,11 @@
           </template>
 
           <template v-else-if="column.key === 'action'">
-            <a-space>
+            <a-space class="action-cell-space">
               <a-button type="link" @click="openDetailModal(record)">详情</a-button>
               <a-button
                 type="link"
-                @click="router.push({ path: `/app/edit/${record.id}`, query: { mode: 'admin' } })"
+                @click="router.push(`/app/edit/${record.id}`)"
               >
                 编辑
               </a-button>
@@ -312,7 +312,7 @@ const handleDetailAction = (action: string) => {
 
   if (action === 'edit') {
     detailOpen.value = false
-    void router.push({ path: `/app/edit/${detailApp.value.id}`, query: { mode: 'admin' } })
+    void router.push(`/app/edit/${detailApp.value.id}`)
     return
   }
 
@@ -330,3 +330,24 @@ onMounted(() => {
   void loadData()
 })
 </script>
+
+<style scoped>
+.action-cell-space {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.action-cell-space :deep(.ant-btn-link) {
+  padding-inline: 0 10px;
+}
+
+.action-cell-space :deep(.ant-space-item:last-child .ant-btn-link) {
+  margin-right: 14px;
+}
+
+.management-table-panel :deep(.ant-table-thead > tr > th:last-child),
+.management-table-panel :deep(.ant-table-tbody > tr > td:last-child) {
+  padding-right: 40px !important;
+}
+</style>

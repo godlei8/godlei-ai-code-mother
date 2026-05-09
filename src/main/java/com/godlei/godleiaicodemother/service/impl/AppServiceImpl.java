@@ -11,6 +11,7 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.godlei.godleiaicodemother.constant.AppConstant;
+import com.godlei.godleiaicodemother.constant.UserConstant;
 import com.godlei.godleiaicodemother.exception.BusinessException;
 import com.godlei.godleiaicodemother.exception.ErrorCode;
 import com.godlei.godleiaicodemother.exception.ThrowUtils;
@@ -186,6 +187,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     public AppVO getAppVOByUser(long id, User loginUser) {
+        if (isAdminUser(loginUser)) {
+            return getAppVO(getAppByIdAdmin(id));
+        }
         return getAppVO(requireOwnedApp(id, loginUser));
     }
 
@@ -397,5 +401,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } else {
             queryWrapper.orderBy(COL_CREATE_TIME, false);
         }
+    }
+
+    private static boolean isAdminUser(User loginUser) {
+        return loginUser != null && UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
     }
 }

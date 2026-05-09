@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 /* eslint-disable */
 import request from '@/request'
@@ -50,37 +49,7 @@ export async function getLoginUser(options?: { [key: string]: any }) {
   })
 }
 
-/** 姝ゅ鍚庣娌℃湁鎻愪緵娉ㄩ噴 POST /user/my/password */
-export async function updateMyUserPassword(
-  body: API.UserPasswordUpdateRequest,
-  options?: { [key: string]: any }
-) {
-  return request<API.BaseResponseBoolean>('/user/my/password', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    data: body,
-    ...(options || {}),
-  })
-}
-
-/** 姝ゅ鍚庣娌℃湁鎻愪緵娉ㄩ噴 POST /user/my/update */
-export async function updateMyUser(
-  body: API.UserProfileUpdateRequest,
-  options?: { [key: string]: any }
-) {
-  return request<API.BaseResponseBoolean>('/user/my/update', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    data: body,
-    ...(options || {}),
-  })
-}
-
-/** 姝ゅ鍚庣娌℃湁鎻愪緵娉ㄩ噴 GET /user/get/vo */
+/** 此处后端没有提供注释 GET /user/get/vo */
 export async function getUserVoById(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getUserVOByIdParams,
@@ -126,6 +95,36 @@ export async function userLogin(body: API.UserLoginRequest, options?: { [key: st
 export async function userLogout(options?: { [key: string]: any }) {
   return request<API.BaseResponseBoolean>('/user/logout', {
     method: 'POST',
+    ...(options || {}),
+  })
+}
+
+/** 此处后端没有提供注释 POST /user/my/password */
+export async function updateMyUserPassword(
+  body: API.UserPasswordUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/my/password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 此处后端没有提供注释 POST /user/my/update */
+export async function updateMyUser(
+  body: API.UserProfileUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/my/update', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
     ...(options || {}),
   })
 }

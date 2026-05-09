@@ -23,6 +23,7 @@ export const ACCESS_ACTION = {
   APP_DELETE: 'app.delete',
   APP_DEPLOY: 'app.deploy',
   APP_MANAGE_VIEW: 'app.manage.view',
+  CHAT_HISTORY_VIEW: 'chat.history.view',
   ACCESS_VIEW: 'access.view',
 } as const
 
@@ -39,6 +40,7 @@ export const ACCESS_ACTION_LABEL: Record<AccessAction, string> = {
   'app.delete': '删除应用',
   'app.deploy': '部署应用',
   'app.manage.view': '查看应用管理',
+  'chat.history.view': '查看对话管理',
   'access.view': '查看权限中心',
 }
 

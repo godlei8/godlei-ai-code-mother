@@ -14,7 +14,9 @@
       >
         <template #extra>
           <a-space wrap>
-            <a-button @click="router.push(`/app/chat/${appId}`)">返回对话页</a-button>
+            <a-button @click="router.push(`/app/chat/${appId}`)">
+              返回对话页
+            </a-button>
             <a-button v-if="previewUrl" @click="handleOpenPreview">打开预览</a-button>
           </a-space>
         </template>
@@ -36,7 +38,9 @@
         </a-form-item>
 
         <div class="form-actions">
-          <a-button @click="router.push(`/app/chat/${appId}`)">取消</a-button>
+          <a-button @click="router.push(`/app/chat/${appId}`)">
+            取消
+          </a-button>
           <a-button type="primary" :loading="submitLoading" @click="handleSubmit">保存修改</a-button>
         </div>
       </a-form>
@@ -54,14 +58,13 @@ import { useRoute, useRouter } from 'vue-router'
 import DetailStatsGrid from '@/components/common/DetailStatsGrid.vue'
 import type { DetailStatItem } from '@/components/common/DetailStatsGrid.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
-import { getAppByIdAdmin, getAppVo, updateAppAdmin, updateMyApp } from '@/api/appController'
+import { getAppVo, updateAppAdmin, updateMyApp } from '@/api/appController'
 import { getUserVoById } from '@/api/userController'
 import { getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 import {
   formatAppDateTime,
   resolveAppCreatorDisplayName,
-  resolveAppDetailLoadMode,
   resolveAppEditorMode,
 } from '@/utils/appHelpers'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
@@ -82,9 +85,7 @@ const formState = reactive({
 })
 
 const appId = computed(() => String(route.params.id ?? '').trim())
-const detailLoadMode = computed(() =>
-  resolveAppDetailLoadMode(accessRole.value, String(route.query.mode || '')),
-)
+const safeAppId = computed<API.LongId>(() => appId.value)
 
 const editorMode = computed(() =>
   resolveAppEditorMode(accessRole.value, loginUser.value?.id, appDetail.value?.userId),
@@ -118,7 +119,7 @@ const syncFormState = () => {
 }
 
 const syncCreatorDisplayName = async (detail: API.AppVO | API.App) => {
-  const creatorUserName = 'userName' in detail ? detail.userName : undefined
+  const creatorUserName = (detail as API.AppVO & { userName?: string }).userName
 
   creatorDisplayName.value = resolveAppCreatorDisplayName(
     detail.userId,
@@ -151,9 +152,7 @@ const loadAppDetail = async () => {
   }
 
   try {
-    const res = detailLoadMode.value.useAdminApi
-      ? await getAppByIdAdmin({ id: appId.value })
-      : await getAppVo({ id: appId.value })
+    const res = await getAppVo({ id: safeAppId.value })
 
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '应用详情加载失败')
@@ -187,7 +186,7 @@ const handleSubmit = async () => {
   try {
     if (isAdminMode.value) {
       const res = await updateAppAdmin({
-        id: appId.value,
+        id: safeAppId.value,
         appName: formState.appName.trim(),
         cover: formState.cover.trim(),
         priority: formState.priority,
@@ -199,7 +198,7 @@ const handleSubmit = async () => {
       }
     } else {
       const res = await updateMyApp({
-        id: appId.value,
+        id: safeAppId.value,
         appName: formState.appName.trim(),
       })
 

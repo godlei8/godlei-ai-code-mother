@@ -2,17 +2,10 @@ import type { AccessRole } from '@/access/accessConstants'
 
 const DEFAULT_APP_NAME = 'AI 生成应用'
 const APP_NAME_MAX_LENGTH = 16
-const APP_PENDING_PROMPT_KEY_PREFIX = 'godlei_app_pending_prompt_'
 
 export interface AppEditorModeResult {
   mode: 'admin' | 'self' | 'forbidden'
   canEdit: boolean
-  useAdminApi: boolean
-}
-
-export interface AppDetailLoadModeResult {
-  mode: 'admin' | 'self'
-  useAdminApi: boolean
 }
 
 const normalizeIdValue = (id?: string | number) => {
@@ -23,10 +16,6 @@ const normalizeIdValue = (id?: string | number) => {
 }
 
 const padDateSegment = (value: number) => String(value).padStart(2, '0')
-
-const getPendingPromptStorageKey = (appId: string | number) => {
-  return `${APP_PENDING_PROMPT_KEY_PREFIX}${appId}`
-}
 
 export const buildAppNameFromPrompt = (prompt: string, maxLength = APP_NAME_MAX_LENGTH) => {
   const firstMeaningfulLine = prompt
@@ -54,7 +43,6 @@ export const resolveAppEditorMode = (
     return {
       mode: 'admin',
       canEdit: true,
-      useAdminApi: true,
     }
   }
 
@@ -66,31 +54,12 @@ export const resolveAppEditorMode = (
     return {
       mode: 'self',
       canEdit: true,
-      useAdminApi: false,
     }
   }
 
   return {
     mode: 'forbidden',
     canEdit: false,
-    useAdminApi: false,
-  }
-}
-
-export const resolveAppDetailLoadMode = (
-  currentRole: AccessRole,
-  requestedMode?: string,
-): AppDetailLoadModeResult => {
-  if (currentRole === 'admin' && requestedMode === 'admin') {
-    return {
-      mode: 'admin',
-      useAdminApi: true,
-    }
-  }
-
-  return {
-    mode: 'self',
-    useAdminApi: false,
   }
 }
 
@@ -166,27 +135,4 @@ export const resolveAppCreatorDisplayName = (
   }
 
   return '-'
-}
-
-export const savePendingAppPrompt = (appId: string | number, prompt: string) => {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.sessionStorage.setItem(getPendingPromptStorageKey(appId), prompt)
-}
-
-export const consumePendingAppPrompt = (appId: string | number) => {
-  if (typeof window === 'undefined') {
-    return ''
-  }
-
-  const storageKey = getPendingPromptStorageKey(appId)
-  const prompt = window.sessionStorage.getItem(storageKey) ?? ''
-
-  if (prompt) {
-    window.sessionStorage.removeItem(storageKey)
-  }
-
-  return prompt
 }

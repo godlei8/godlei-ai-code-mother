@@ -5,6 +5,11 @@ export type AppCardProfile = {
   initials: string
 }
 
+type AppCardSource = API.AppVO & {
+  userName?: string
+  userAvatar?: string
+}
+
 const DEFAULT_TITLE = '未命名应用'
 const DEFAULT_CREATOR_NAME = '匿名用户'
 
@@ -15,25 +20,32 @@ const buildInitials = (name: string) => {
 }
 
 export const hydrateOwnedAppCreator = (app: API.AppVO, loginUser?: API.LoginUserVO | null): API.AppVO => {
+  const appWithCreator = app as AppCardSource
+
   if (!loginUser?.id) {
     return app
   }
 
-  if (String(app.userId ?? '') !== String(loginUser.id)) {
+  if (String(appWithCreator.userId ?? '') !== String(loginUser.id)) {
     return app
   }
 
   return {
-    ...app,
-    userName: app.userName?.trim() || loginUser.userName || loginUser.userAccount || DEFAULT_CREATOR_NAME,
-    userAvatar: app.userAvatar?.trim() || loginUser.userAvatar || '',
-  }
+    ...appWithCreator,
+    userName:
+      appWithCreator.userName?.trim() ||
+      loginUser.userName ||
+      loginUser.userAccount ||
+      DEFAULT_CREATOR_NAME,
+    userAvatar: appWithCreator.userAvatar?.trim() || loginUser.userAvatar || '',
+  } as API.AppVO
 }
 
 export const resolveAppCardProfile = (app: API.AppVO): AppCardProfile => {
-  const title = app.appName?.trim() || DEFAULT_TITLE
-  const creatorName = app.userName?.trim() || DEFAULT_CREATOR_NAME
-  const avatarUrl = app.userAvatar?.trim() || ''
+  const appWithCreator = app as AppCardSource
+  const title = appWithCreator.appName?.trim() || DEFAULT_TITLE
+  const creatorName = appWithCreator.userName?.trim() || DEFAULT_CREATOR_NAME
+  const avatarUrl = appWithCreator.userAvatar?.trim() || ''
 
   return {
     title,
