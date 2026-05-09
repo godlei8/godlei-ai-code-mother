@@ -76,6 +76,14 @@
             </a-tag>
           </template>
 
+          <template v-else-if="column.key === 'deployedTime'">
+            {{ formatAppDateTime(record.deployedTime) }}
+          </template>
+
+          <template v-else-if="column.key === 'updateTime'">
+            {{ formatAppDateTime(record.updateTime) }}
+          </template>
+
           <template v-else-if="column.key === 'action'">
             <a-space>
               <a-button type="link" @click="openDetailModal(record)">详情</a-button>
@@ -121,6 +129,7 @@ import type { AppActionItem } from '@/components/app/appAction'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { deleteAppAdmin, listAppByPageAdmin, updateAppAdmin } from '@/api/appController'
 import { getStaticPreviewUrl } from '@/config/env'
+import { formatAppDateTime } from '@/utils/appHelpers'
 import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType } from '@/utils/codeGenTypes'
 
 type TableRecord = API.AppVO
@@ -157,8 +166,8 @@ const columns = [
   { title: '优先级', dataIndex: 'priority', key: 'priority', width: 110 },
   { title: '创建者', dataIndex: 'userId', key: 'userId', width: 180 },
   { title: '部署标识', dataIndex: 'deployKey', key: 'deployKey', ellipsis: true },
-  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 180 },
-  { title: '更新时间', dataIndex: 'updateTime', key: 'updateTime', width: 180 },
+  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 240 },
+  { title: '更新时间', dataIndex: 'updateTime', key: 'updateTime', width: 240 },
   { title: '操作', key: 'action', width: 240 },
 ]
 

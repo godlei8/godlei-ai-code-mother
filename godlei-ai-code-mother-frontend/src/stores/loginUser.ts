@@ -1,70 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { message } from 'ant-design-vue'
-import { ACCESS_ROLE, normalizeAccessRole } from '@/access/accessConstants'
+import { normalizeAccessRole } from '@/access/accessConstants'
 import {
   getLoginUser,
-  updateUser,
+  updateMyUser,
+  updateMyUserPassword,
   userLogin,
   userLogout,
   userRegister,
 } from '@/api/userController'
-
-const PROFILE_DRAFT_STORAGE_KEY = 'godlei_profile_draft'
-
-const getProfileDraftKey = (userId?: string | number) => {
-  return userId ? `${PROFILE_DRAFT_STORAGE_KEY}_${userId}` : ''
-}
-
-const readProfileDraft = (userId?: string | number): Partial<API.LoginUserVO> => {
-  const storageKey = getProfileDraftKey(userId)
-
-  if (!storageKey) {
-    return {}
-  }
-
-  try {
-    const cacheValue = window.localStorage.getItem(storageKey)
-    return cacheValue ? (JSON.parse(cacheValue) as Partial<API.LoginUserVO>) : {}
-  } catch {
-    return {}
-  }
-}
-
-const writeProfileDraft = (userId: string | number | undefined, payload: Partial<API.LoginUserVO>) => {
-  const storageKey = getProfileDraftKey(userId)
-
-  if (!storageKey) {
-    return
-  }
-
-  window.localStorage.setItem(storageKey, JSON.stringify(payload))
-}
-
-const clearProfileDraft = (userId?: string | number) => {
-  const storageKey = getProfileDraftKey(userId)
-
-  if (!storageKey) {
-    return
-  }
-
-  window.localStorage.removeItem(storageKey)
-}
-
-const mergeLoginUserWithDraft = (loginUser?: API.LoginUserVO | null): API.LoginUserVO | null => {
-  if (!loginUser?.id) {
-    return loginUser ?? null
-  }
-
-  if (normalizeAccessRole(loginUser.userRole) !== ACCESS_ROLE.USER) {
-    return loginUser
-  }
-
-  return {
-    ...loginUser,
-    ...readProfileDraft(loginUser.id),
-  }
-}
 
 export const useLoginUserStore = defineStore('loginUser', () => {
   const loginUser = ref<API.LoginUserVO | null>(null)
@@ -78,8 +23,8 @@ export const useLoginUserStore = defineStore('loginUser', () => {
     return loginUser.value?.userName || loginUser.value?.userAccount || '未登录'
   })
 
-  const setLoginUser = (newLoginUser: API.LoginUserVO | null, useDraft = true) => {
-    loginUser.value = useDraft ? mergeLoginUserWithDraft(newLoginUser) : newLoginUser
+  const setLoginUser = (newLoginUser: API.LoginUserVO | null, _useDraft = true) => {
+    loginUser.value = newLoginUser
   }
 
   const clearLoginUser = () => {
@@ -122,7 +67,6 @@ export const useLoginUserStore = defineStore('loginUser', () => {
         return false
       }
 
-      clearProfileDraft(res.data.data.id)
       setLoginUser(res.data.data)
       hasBootstrap.value = true
       message.success(`欢迎回来，${res.data.data.userName || res.data.data.userAccount || '用户'}`)
@@ -169,7 +113,9 @@ export const useLoginUserStore = defineStore('loginUser', () => {
     }
   }
 
-  const saveProfile = async (payload: Pick<API.UserUpdateRequest, 'userName' | 'userAvatar' | 'userProfile'>) => {
+  const saveProfile = async (
+    payload: Pick<API.UserProfileUpdateRequest, 'userName' | 'userAvatar' | 'userProfile'>,
+  ) => {
     if (!loginUser.value?.id) {
       message.warning('请先登录后再操作')
       return false
@@ -178,41 +124,42 @@ export const useLoginUserStore = defineStore('loginUser', () => {
     actionLoading.value = true
 
     try {
-      if (accessRole.value === ACCESS_ROLE.ADMIN) {
-        const res = await updateUser({
-          id: loginUser.value.id,
-          ...payload,
-        })
-
-        if (res.data?.code !== 0 || !res.data.data) {
-          message.error(res.data?.message || '资料更新失败')
-          return false
-        }
-
-        clearProfileDraft(loginUser.value.id)
-        setLoginUser(
-          {
-            ...loginUser.value,
-            ...payload,
-          },
-          false,
-        )
-        message.success('资料已更新')
-        return true
+      const res = await updateMyUser(payload)
+      if (res.data?.code !== 0 || !res.data.data) {
+        message.error(res.data?.message || '资料更新失败')
+        return false
       }
 
-      writeProfileDraft(loginUser.value.id, payload)
-      setLoginUser(
-        {
-          ...loginUser.value,
-          ...payload,
-        },
-        false,
-      )
-      message.success('资料已在前端兼容模式下保存，待后端接口开放后可直接切换')
+      await fetchLoginUser(true)
+      message.success('资料已更新')
       return true
     } catch {
       message.error('资料更新失败，请稍后重试')
+      return false
+    } finally {
+      actionLoading.value = false
+    }
+  }
+
+  const changePassword = async (payload: API.UserPasswordUpdateRequest) => {
+    if (!loginUser.value?.id) {
+      message.warning('请先登录后再操作')
+      return false
+    }
+
+    actionLoading.value = true
+
+    try {
+      const res = await updateMyUserPassword(payload)
+      if (res.data?.code !== 0 || !res.data.data) {
+        message.error(res.data?.message || '密码修改失败')
+        return false
+      }
+
+      message.success('密码已更新')
+      return true
+    } catch {
+      message.error('密码修改失败，请稍后重试')
       return false
     } finally {
       actionLoading.value = false
@@ -234,5 +181,6 @@ export const useLoginUserStore = defineStore('loginUser', () => {
     register,
     logout,
     saveProfile,
+    changePassword,
   }
 })

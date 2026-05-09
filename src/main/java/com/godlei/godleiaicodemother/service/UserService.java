@@ -1,5 +1,7 @@
 package com.godlei.godleiaicodemother.service;
 
+import com.godlei.godleiaicodemother.model.dto.user.UserPasswordUpdateRequest;
+import com.godlei.godleiaicodemother.model.dto.user.UserProfileUpdateRequest;
 import com.godlei.godleiaicodemother.model.dto.user.UserQueryRequest;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.model.vo.LoginUserVO;
@@ -52,6 +54,24 @@ public interface UserService extends IService<User> {
      * @return
      */
     User getLoginUser(HttpServletRequest request);
+
+    /**
+     * 当前登录用户更新个人资料
+     *
+     * @param userProfileUpdateRequest 资料更新请求
+     * @param loginUser 当前登录用户
+     * @return 是否更新成功
+     */
+    boolean updateMyUser(UserProfileUpdateRequest userProfileUpdateRequest, User loginUser);
+
+    /**
+     * 当前登录用户修改密码
+     *
+     * @param userPasswordUpdateRequest 密码更新请求
+     * @param loginUser 当前登录用户
+     * @return 是否更新成功
+     */
+    boolean changeMyPassword(UserPasswordUpdateRequest userPasswordUpdateRequest, User loginUser);
 
     /**
      * 获取脱敏后的用户信息

@@ -7,6 +7,9 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.godlei.godleiaicodemother.exception.BusinessException;
 import com.godlei.godleiaicodemother.exception.ErrorCode;
+import com.godlei.godleiaicodemother.exception.ThrowUtils;
+import com.godlei.godleiaicodemother.model.dto.user.UserPasswordUpdateRequest;
+import com.godlei.godleiaicodemother.model.dto.user.UserProfileUpdateRequest;
 import com.godlei.godleiaicodemother.model.dto.user.UserQueryRequest;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.mapper.UserMapper;
@@ -123,6 +126,58 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         return currentUser;
+    }
+
+    @Override
+    public boolean updateMyUser(UserProfileUpdateRequest userProfileUpdateRequest, User loginUser) {
+        ThrowUtils.throwIf(userProfileUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
+        if (StrUtil.isBlank(userProfileUpdateRequest.getUserName())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户昵称不能为空");
+        }
+
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setUserName(userProfileUpdateRequest.getUserName().trim());
+        user.setUserAvatar(StrUtil.trim(userProfileUpdateRequest.getUserAvatar()));
+        user.setUserProfile(StrUtil.trim(userProfileUpdateRequest.getUserProfile()));
+
+        boolean result = this.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return true;
+    }
+
+    @Override
+    public boolean changeMyPassword(UserPasswordUpdateRequest userPasswordUpdateRequest, User loginUser) {
+        ThrowUtils.throwIf(userPasswordUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
+
+        String oldPassword = userPasswordUpdateRequest.getOldPassword();
+        String newPassword = userPasswordUpdateRequest.getNewPassword();
+        String checkPassword = userPasswordUpdateRequest.getCheckPassword();
+
+        if (StrUtil.hasBlank(oldPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
+        }
+        if (newPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        if (!encryptOldPassword.equals(loginUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码错误");
+        }
+
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setUserPassword(getEncryptPassword(newPassword));
+
+        boolean result = this.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return true;
     }
 
     @Override

@@ -100,7 +100,9 @@ const previewUrl = computed(() => {
 })
 
 const codeGenLabel = computed(() => formatCodeGenType(appDetail.value?.codeGenType))
-const formattedUpdateTime = computed(() => formatAppDateTime(appDetail.value?.updateTime))
+const formattedUpdateTime = computed(() =>
+  formatAppDateTime(appDetail.value?.updateTime || appDetail.value?.createTime),
+)
 
 const summaryItems = computed<DetailStatItem[]>(() => [
   { label: '应用编号', value: appDetail.value?.id },

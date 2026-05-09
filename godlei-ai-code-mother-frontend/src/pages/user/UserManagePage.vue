@@ -68,6 +68,10 @@
             </a-tag>
           </template>
 
+          <template v-else-if="column.key === 'createTime'">
+            {{ formatAppDateTime(record.createTime) }}
+          </template>
+
           <template v-else-if="column.key === 'action'">
             <a-space>
               <a-button type="link" @click="openEditModal(record)">编辑</a-button>
@@ -102,6 +106,7 @@ import { useAccess } from '@/access/useAccess'
 import UserFormModal from '@/components/UserFormModal.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { addUser, deleteUser, listUserVoByPage, updateUser } from '@/api/userController'
+import { formatAppDateTime } from '@/utils/appHelpers'
 
 type TableRecord = API.UserVO
 type ModalMode = 'create' | 'edit'
@@ -137,7 +142,7 @@ const columns = [
   { title: '用户昵称', dataIndex: 'userName', key: 'userName' },
   { title: '个人简介', dataIndex: 'userProfile', key: 'userProfile', ellipsis: true },
   { title: '用户角色', dataIndex: 'userRole', key: 'userRole', width: 120 },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 220 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 240 },
   { title: '操作', key: 'action', width: 160 },
 ]
 

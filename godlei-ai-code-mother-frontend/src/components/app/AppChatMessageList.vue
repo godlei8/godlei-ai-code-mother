@@ -24,13 +24,16 @@
           />
           <p v-else>{{ item.content }}</p>
         </div>
+        <a-avatar v-if="item.role === 'user'" :src="userAvatar" :size="34" class="user-avatar">
+          {{ userAvatarText }}
+        </a-avatar>
       </div>
     </article>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import AppMarkdownContent from './AppMarkdownContent.vue'
 import aiAvatar from '@/assets/ai-chat-avatar.svg'
 
@@ -42,9 +45,12 @@ export interface AppChatMessage {
 
 const props = defineProps<{
   messages: AppChatMessage[]
+  userAvatar?: string
+  userName?: string
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
+const userAvatarText = computed(() => props.userName?.slice(0, 1).toUpperCase() || 'U')
 
 const scrollToBottom = () => {
   const container = containerRef.value
@@ -115,6 +121,16 @@ watch(
   align-self: flex-start;
   border-radius: 50%;
   box-shadow: 0 10px 18px rgb(15 23 42 / 12%);
+}
+
+.user-avatar {
+  flex: 0 0 34px;
+  align-self: flex-start;
+  color: #eff6ff;
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0f5ef0 0%, #3b82f6 100%);
+  box-shadow: 0 10px 18px rgb(21 94 239 / 18%);
 }
 
 .message-bubble {

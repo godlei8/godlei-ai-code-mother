@@ -11,9 +11,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 class AiCodeGeneratorServiceTest {
+
     @Resource
     private AiCodeGeneratorService aiCodeGeneratorService;
 
@@ -34,8 +34,11 @@ class AiCodeGeneratorServiceTest {
 
     @Test
     void generateAndSaveCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("做一个简单介绍页，不超过20行", CodeGenTypeEnum.MULTI_FILE);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode(
+                "做一个简单介绍页，不超过20行",
+                CodeGenTypeEnum.MULTI_FILE,
+                1L
+        );
         Assertions.assertNotNull(file);
     }
-
 }

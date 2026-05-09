@@ -22,26 +22,42 @@
           </p>
 
           <div class="profile-actions">
-            <a-button type="primary" @click="openEditModal">编辑资料</a-button>
+            <a-space wrap>
+              <a-button type="primary" @click="openEditModal">编辑资料</a-button>
+              <a-button @click="openPasswordModal">修改密码</a-button>
+            </a-space>
           </div>
         </div>
       </div>
 
-      <a-alert
-        :type="accessRole === 'admin' ? 'success' : 'warning'"
-        show-icon
-        :message="profileModeMessage"
-      />
+      <a-alert type="success" show-icon :message="profileModeMessage" />
     </section>
 
     <section class="profile-details glass-card">
       <PageSectionHeader
         title="资料详情"
-        description="当前登录态信息来自全局 Pinia store，普通用户编辑会先走兼容草稿流程。"
+        description="这里展示的是当前登录用户的实时资料，保存后会从后端重新同步最新信息。"
         title-tag="h3"
       />
 
       <DetailStatsGrid :items="detailItems" class="details-grid" />
+    </section>
+
+    <section class="profile-security glass-card">
+      <PageSectionHeader
+        title="账号安全"
+        description="你可以在这里修改当前登录密码。修改成功后，本次登录状态会保持不变。"
+        title-tag="h3"
+      />
+
+      <div class="security-card">
+        <div>
+          <h4>登录密码</h4>
+          <p>建议定期更换密码，并避免与其他平台重复使用。</p>
+        </div>
+
+        <a-button @click="openPasswordModal">更新密码</a-button>
+      </div>
     </section>
 
     <UserFormModal
@@ -51,11 +67,18 @@
       mode="profile"
       :show-role="false"
       :show-account="false"
-      :profile-mode="accessRole === 'admin' ? 'persisted' : 'placeholder'"
+      profile-mode="persisted"
       :loading="actionLoading"
       :initial-values="profileInitialValues"
       @cancel="editModalOpen = false"
       @submit="handleSubmit"
+    />
+
+    <UserPasswordModal
+      :open="passwordModalOpen"
+      :loading="actionLoading"
+      @cancel="passwordModalOpen = false"
+      @submit="handlePasswordSubmit"
     />
   </div>
 </template>
@@ -65,15 +88,18 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ACCESS_ROLE_LABEL } from '@/access/accessConstants'
 import UserFormModal from '@/components/UserFormModal.vue'
+import UserPasswordModal from '@/components/UserPasswordModal.vue'
 import DetailStatsGrid from '@/components/common/DetailStatsGrid.vue'
 import type { DetailStatItem } from '@/components/common/DetailStatsGrid.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { formatAppDateTime } from '@/utils/appHelpers'
 
 const loginUserStore = useLoginUserStore()
 const { loginUser, displayName, accessRole, actionLoading } = storeToRefs(loginUserStore)
 
 const editModalOpen = ref(false)
+const passwordModalOpen = ref(false)
 
 const roleLabel = computed(() => ACCESS_ROLE_LABEL[accessRole.value])
 
@@ -86,18 +112,20 @@ const profileInitialValues = computed(() => ({
 const detailItems = computed<DetailStatItem[]>(() => [
   { label: '用户昵称', value: loginUser.value?.userName },
   { label: '账号标识', value: loginUser.value?.userAccount },
-  { label: '创建时间', value: loginUser.value?.createTime },
-  { label: '更新时间', value: loginUser.value?.updateTime },
+  { label: '创建时间', value: formatAppDateTime(loginUser.value?.createTime) },
+  { label: '更新时间', value: formatAppDateTime(loginUser.value?.updateTime) },
 ])
 
 const profileModeMessage = computed(() => {
-  return accessRole.value === 'admin'
-    ? '当前登录用户为管理员，编辑资料会直接调用现有后端更新接口。'
-    : '当前登录用户为普通用户，编辑资料会先保存为前端兼容草稿，等待后端开放个人资料更新接口。'
+  return '个人资料现在会直接保存到后端，并在保存后同步刷新当前登录信息。'
 })
 
 const openEditModal = () => {
   editModalOpen.value = true
+}
+
+const openPasswordModal = () => {
+  passwordModalOpen.value = true
 }
 
 const handleSubmit = async (payload: { userName?: string; userAvatar?: string; userProfile?: string }) => {
@@ -107,11 +135,20 @@ const handleSubmit = async (payload: { userName?: string; userAvatar?: string; u
     editModalOpen.value = false
   }
 }
+
+const handlePasswordSubmit = async (payload: API.UserPasswordUpdateRequest) => {
+  const success = await loginUserStore.changePassword(payload)
+
+  if (success) {
+    passwordModalOpen.value = false
+  }
+}
 </script>
 
 <style scoped>
 .profile-panel,
-.profile-details {
+.profile-details,
+.profile-security {
   padding: 26px;
 }
 
@@ -160,9 +197,39 @@ const handleSubmit = async (payload: { userName?: string; userAvatar?: string; u
   margin-top: 18px;
 }
 
+.security-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 20px 22px;
+  background: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(148 163 184 / 15%);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow-soft);
+}
+
+.security-card h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.security-card p {
+  margin: 8px 0 0;
+  color: #64748b;
+  line-height: 1.75;
+}
+
 @media (max-width: 980px) {
   .profile-main {
     flex-direction: column;
+  }
+
+  .security-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>

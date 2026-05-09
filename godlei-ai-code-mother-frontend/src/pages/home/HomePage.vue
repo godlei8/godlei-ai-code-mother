@@ -53,7 +53,7 @@
 
       <template v-else>
         <div v-if="myLoading" class="card-grid is-loading">
-          <a-skeleton v-for="item in 3" :key="item" active class="grid-skeleton" />
+          <a-skeleton v-for="item in 4" :key="item" active class="grid-skeleton" />
         </div>
 
         <div v-else-if="myApps.length" class="card-grid">
@@ -110,7 +110,7 @@
       </PageSectionHeader>
 
       <div v-if="featuredLoading" class="card-grid is-loading">
-        <a-skeleton v-for="item in 3" :key="item" active class="grid-skeleton" />
+        <a-skeleton v-for="item in 4" :key="item" active class="grid-skeleton" />
       </div>
 
       <div v-else-if="featuredApps.length" class="card-grid">
@@ -176,7 +176,7 @@ import {
 } from '@/pages/home/homeContent'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { hydrateOwnedAppCreator } from '@/utils/appCard'
-import { buildAppNameFromPrompt, formatAppRelativeTime, savePendingAppPrompt } from '@/utils/appHelpers'
+import { buildAppNameFromPrompt, formatAppDateTime, savePendingAppPrompt } from '@/utils/appHelpers'
 
 type DetailSource = 'mine' | 'featured'
 
@@ -274,11 +274,11 @@ const clearPromptDraft = () => {
 }
 
 const getMineDescription = (app: API.AppVO) => {
-  return `最近更新于 ${formatAppRelativeTime(app.updateTime || app.createTime)}`
+  return `最近更新于 ${formatAppDateTime(app.updateTime || app.createTime)}`
 }
 
 const getFeaturedDescription = (app: API.AppVO) => {
-  return app.initPrompt?.slice(0, 54) || `创建于 ${formatAppRelativeTime(app.createTime)}`
+  return app.initPrompt?.slice(0, 54) || `创建于 ${formatAppDateTime(app.createTime)}`
 }
 
 const openDetailModal = (source: DetailSource, app: API.AppVO) => {
@@ -592,8 +592,8 @@ onMounted(() => {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .card-grid.is-loading {
@@ -601,9 +601,11 @@ onMounted(() => {
 }
 
 .grid-skeleton {
-  padding: 24px;
+  min-height: 360px;
+  padding: 20px;
   background: rgb(255 255 255 / 74%);
-  border-radius: 24px;
+  border: 1px solid rgb(147 197 253 / 24%);
+  border-radius: 28px;
 }
 
 .pagination-wrap {
@@ -612,7 +614,13 @@ onMounted(() => {
   margin-top: 20px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1480px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1120px) {
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

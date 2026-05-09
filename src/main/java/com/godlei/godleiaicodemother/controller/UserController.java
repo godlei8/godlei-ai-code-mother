@@ -81,6 +81,30 @@ public class UserController {
      * @param request 请求对象
      * @return
      */
+    /**
+     * 当前登录用户更新个人资料
+     */
+    @PostMapping("/my/update")
+    public BaseResponse<Boolean> updateMyUser(@RequestBody UserProfileUpdateRequest userProfileUpdateRequest,
+                                              HttpServletRequest request) {
+        ThrowUtils.throwIf(userProfileUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.updateMyUser(userProfileUpdateRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 当前登录用户修改密码
+     */
+    @PostMapping("/my/password")
+    public BaseResponse<Boolean> updateMyUserPassword(@RequestBody UserPasswordUpdateRequest userPasswordUpdateRequest,
+                                                      HttpServletRequest request) {
+        ThrowUtils.throwIf(userPasswordUpdateRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.changeMyPassword(userPasswordUpdateRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);

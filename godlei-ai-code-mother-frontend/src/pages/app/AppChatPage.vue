@@ -10,7 +10,11 @@
           class="chat-header"
         />
 
-        <AppChatMessageList :messages="messages" />
+        <AppChatMessageList
+          :messages="messages"
+          :user-avatar="loginUser?.userAvatar"
+          :user-name="loginUser?.userName || loginUser?.userAccount || '用户'"
+        />
 
         <div v-if="deployedUrl" class="deploy-banner">
           <span>部署成功：</span>
@@ -29,7 +33,7 @@
         <AppPreviewFrame
           :title="appDetail?.appName || '应用预览'"
           :src="previewSrc"
-          :loading="sending && !previewReady"
+          :loading="sending"
           :empty-description="previewEmptyDescription"
         >
           <template #actions>
