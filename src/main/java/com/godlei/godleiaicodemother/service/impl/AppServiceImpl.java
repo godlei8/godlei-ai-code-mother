@@ -19,6 +19,7 @@ import com.godlei.godleiaicodemother.model.dto.app.*;
 import com.godlei.godleiaicodemother.model.entity.App;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.model.vo.AppVO;
+import com.godlei.godleiaicodemother.service.AppArtifactCleanupService;
 import com.godlei.godleiaicodemother.service.AppService;
 import com.godlei.godleiaicodemother.service.ChatHistoryService;
 import jakarta.annotation.Resource;
@@ -48,6 +49,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private AppArtifactCleanupService appArtifactCleanupService;
 
     private static final String DEFAULT_APP_NAME = "未命名应用";
 
@@ -171,10 +175,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     public boolean deleteMyApp(long id, User loginUser) {
-        requireOwnedApp(id, loginUser);
+        App app = requireOwnedApp(id, loginUser);
         boolean removed = this.removeById(id);
         if (removed) {
             chatHistoryService.removeAllByAppId(id);
+            appArtifactCleanupService.cleanupArtifacts(app);
         }
         return removed;
     }
@@ -211,9 +216,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Override
     public boolean deleteAppAdmin(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        App app = this.getById(id);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
         boolean removed = this.removeById(id);
         ThrowUtils.throwIf(!removed, ErrorCode.NOT_FOUND_ERROR);
         chatHistoryService.removeAllByAppId(id);
+        appArtifactCleanupService.cleanupArtifacts(app);
         return true;
     }
 
