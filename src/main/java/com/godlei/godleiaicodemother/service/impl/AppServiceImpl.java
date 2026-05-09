@@ -20,7 +20,9 @@ import com.godlei.godleiaicodemother.model.entity.App;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.model.vo.AppVO;
 import com.godlei.godleiaicodemother.service.AppService;
+import com.godlei.godleiaicodemother.service.ChatHistoryService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -38,10 +40,14 @@ import java.util.stream.Collectors;
  * @author <a href="https://github.com/godlei8">Godlei</a>
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
     private static final String DEFAULT_APP_NAME = "未命名应用";
 
@@ -166,7 +172,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Override
     public boolean deleteMyApp(long id, User loginUser) {
         requireOwnedApp(id, loginUser);
-        return this.removeById(id);
+        boolean removed = this.removeById(id);
+        if (removed) {
+            chatHistoryService.removeAllByAppId(id);
+        }
+        return removed;
     }
 
     @Override
@@ -203,6 +213,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         boolean removed = this.removeById(id);
         ThrowUtils.throwIf(!removed, ErrorCode.NOT_FOUND_ERROR);
+        chatHistoryService.removeAllByAppId(id);
         return true;
     }
 
@@ -274,8 +285,29 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 获取应用名称
         String appName = app.getAppName();
-        // 5. 在调用 AI
-       return aiCodeGeneratorFacade.generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId);
+        chatHistoryService.saveUserMessage(appId, app.getUserId(), message);
+        StringBuilder aiBuffer = new StringBuilder();
+        // 5. 调用 AI（持久化用户消息、成功后的 AI 全文、或失败时的错误信息）
+        return aiCodeGeneratorFacade
+                .generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId)
+                .doOnNext(aiBuffer::append)
+                .doOnComplete(() -> {
+                    try {
+                        String text = aiBuffer.toString();
+                        if (StrUtil.isNotBlank(text)) {
+                            chatHistoryService.saveAiMessage(appId, app.getUserId(), text);
+                        }
+                    } catch (Exception e) {
+                        log.error("保存 AI 对话结果失败, appId={}", appId, e);
+                    }
+                })
+                .doOnError(err -> {
+                    try {
+                        chatHistoryService.saveAiError(appId, app.getUserId(), err);
+                    } catch (Exception e) {
+                        log.error("保存 AI 错误信息失败, appId={}", appId, e);
+                    }
+                });
     }
 
     /**
