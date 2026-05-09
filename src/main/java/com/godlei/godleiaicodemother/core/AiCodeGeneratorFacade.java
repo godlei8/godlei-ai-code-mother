@@ -1,8 +1,10 @@
 package com.godlei.godleiaicodemother.core;
 
 
+import cn.hutool.json.JSONUtil;
 import com.godlei.godleiaicodemother.ai.AiCodeGeneratorService;
 import com.godlei.godleiaicodemother.ai.AiCodeGeneratorServiceFactory;
+import com.godlei.godleiaicodemother.ai.model.AppNameResult;
 import com.godlei.godleiaicodemother.ai.model.HtmlCodeResult;
 import com.godlei.godleiaicodemother.ai.model.MultiFileCodeResult;
 
@@ -30,6 +32,19 @@ public class AiCodeGeneratorFacade {
 
 //    @Resource
 //    private VueProjectBuilder vueProjectBuilder;
+
+    /**
+     * 根据用户提示词生成应用名称
+     */
+    public String generateAppName(String userMessage) {
+        if (userMessage == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户提示词不能为空");
+        }
+        //  AI 服务实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.AiCodeGeneratorService();
+        AppNameResult result = aiCodeGeneratorService.generateAppName(userMessage);
+        return result.getAppName();
+    }
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -73,6 +88,7 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "生成类型不能为空");
         }
+
         // 根据 appId 获取相应的 AI 服务实例
         AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.AiCodeGeneratorService();
         return switch (codeGenTypeEnum) {

@@ -75,7 +75,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (StrUtil.isBlank(initPrompt)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "initPrompt 不能为空");
         }
-        String appName = StrUtil.isBlank(appAddRequest.getAppName()) ? DEFAULT_APP_NAME : appAddRequest.getAppName();
+        // 根据 用户描述 生成 应用name
+        String appName = StrUtil.isBlank(appAddRequest.getAppName()) ? DEFAULT_APP_NAME : aiCodeGeneratorFacade.generateAppName(appAddRequest.getInitPrompt());
         App app = App.builder()
                 .appName(appName)
                 .initPrompt(initPrompt)
@@ -271,8 +272,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用代码生成类型错误");
         }
+        // 获取应用名称
+        String appName = app.getAppName();
         // 5. 在调用 AI
-       return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+       return aiCodeGeneratorFacade.generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId);
     }
 
     /**

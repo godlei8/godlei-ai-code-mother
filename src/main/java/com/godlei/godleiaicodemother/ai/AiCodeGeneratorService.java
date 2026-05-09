@@ -1,5 +1,6 @@
 package com.godlei.godleiaicodemother.ai;
 
+import com.godlei.godleiaicodemother.ai.model.AppNameResult;
 import com.godlei.godleiaicodemother.ai.model.HtmlCodeResult;
 import com.godlei.godleiaicodemother.ai.model.MultiFileCodeResult;
 import dev.langchain4j.service.SystemMessage;
@@ -39,15 +40,19 @@ public interface AiCodeGeneratorService {
     Flux<String> generateHtmlCodeStream(String userMessage);
 
 
-    /**
-     * 根据系统消息和用户消息生成多文件代码流
-     * 该方法使用系统消息作为提示，根据用户输入生成多文件代码
-     *
-     * @param userMessage 用户输入的消息，用于生成代码
-     * @return 返回一个Flux<String>类型的代码流，可以逐步生成和输出代码内容
-     */
+
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     Flux<String> generateMultiFileCodeStream(String userMessage);
 
+
+    /**
+     * 根据用户消息生成应用命名系统
+     * 使用系统提示文件中的配置来指导代码生成
+     *
+     * @param userMessage 用户输入的消息，将作为生成应用命名系统的依据
+     * @return 应用命名系统
+     */
+    @SystemMessage(fromResource = "prompt/apply-naming-system-prompt.txt")
+    AppNameResult generateAppName(String userMessage);
 
 }

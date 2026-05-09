@@ -1,5 +1,6 @@
 package com.godlei.godleiaicodemother.ai;
 
+import com.godlei.godleiaicodemother.ai.model.AppNameResult;
 import com.godlei.godleiaicodemother.ai.model.HtmlCodeResult;
 import com.godlei.godleiaicodemother.ai.model.MultiFileCodeResult;
 import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
@@ -40,5 +41,12 @@ class AiCodeGeneratorServiceTest {
                 1L
         );
         Assertions.assertNotNull(file);
+    }
+
+    @Test
+    void generateAppName() {
+        AppNameResult result = aiCodeGeneratorService.generateAppName("做一个简单介绍页，不超过20行");
+        System.out.println(result.getAppName());
+        Assertions.assertNotNull(result);
     }
 }
