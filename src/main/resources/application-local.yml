@@ -16,3 +16,12 @@
         log-responses: true
         base-url: https://api.deepseek.com
         max-tokens: 10000
+      # 推理 AI 模型配置（用于复杂的推理任务）
+      reasoning-streaming-chat-model:
+        base-url: https://api.deepseek.com
+        api-key: sk-a57410a815c44ff28750e5e090d9d738
+        model-name: deepseek-v4-flash
+        max-tokens: 32768
+        temperature: 0.1
+        log-requests: true
+        log-responses: true

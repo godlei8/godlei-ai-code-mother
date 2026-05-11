@@ -92,10 +92,10 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
     @Override
-    public void saveAiError(Long appId, Long ownerUserId, Throwable error) {
+    public void saveAiError(Long appId, Long ownerUserId, String error) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(ownerUserId == null || ownerUserId <= 0, ErrorCode.PARAMS_ERROR);
-        String text = error == null ? "未知错误" : StrUtil.blankToDefault(error.getMessage(), error.getClass().getSimpleName());
+        String text = error == null ? "未知错误" : error;
         LocalDateTime now = LocalDateTime.now();
         ChatHistory row = ChatHistory.builder()
                 .appId(appId)

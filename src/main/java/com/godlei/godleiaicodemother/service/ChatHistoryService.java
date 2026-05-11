@@ -31,7 +31,7 @@ public interface ChatHistoryService extends IService<ChatHistory> {
     /**
      * 记录 AI 失败信息
      */
-    void saveAiError(Long appId, Long ownerUserId, Throwable error);
+    void saveAiError(Long appId, Long ownerUserId, String error);
 
     /**
      * 删除某应用下的全部对话历史（应用删除时调用）

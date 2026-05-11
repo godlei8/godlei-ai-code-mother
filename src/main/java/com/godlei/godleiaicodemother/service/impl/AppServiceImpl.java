@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
+import com.godlei.godleiaicodemother.core.handler.StreamHandlerExecutor;
 import com.godlei.godleiaicodemother.model.enums.CodeGenTypeEnum;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -52,6 +53,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private ChatHistoryService chatHistoryService;
 
     @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
+    @Resource
     private AppArtifactCleanupService appArtifactCleanupService;
 
     private static final String DEFAULT_APP_NAME = "未命名应用";
@@ -92,7 +96,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .appName(appName)
                 .initPrompt(initPrompt)
                 .priority(AppConstant.DEFAULT_APP_PRIORITY)
-                .codeGenType(CodeGenTypeEnum.HTML.getValue())
+                .codeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue())
                 .userId(loginUser.getId())
                 .build();
         boolean ok = this.save(app);
@@ -297,29 +301,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 获取应用名称
         String appName = app.getAppName();
-        chatHistoryService.saveUserMessage(appId, app.getUserId(), message);
-        StringBuilder aiBuffer = new StringBuilder();
         // 5. 调用 AI（持久化用户消息、成功后的 AI 全文、或失败时的错误信息）
-        return aiCodeGeneratorFacade
-                .generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId)
-                .doOnNext(aiBuffer::append)
-                .doOnComplete(() -> {
-                    try {
-                        String text = aiBuffer.toString();
-                        if (StrUtil.isNotBlank(text)) {
-                            chatHistoryService.saveAiMessage(appId, app.getUserId(), text);
-                        }
-                    } catch (Exception e) {
-                        log.error("保存 AI 对话结果失败, appId={}", appId, e);
-                    }
-                })
-                .doOnError(err -> {
-                    try {
-                        chatHistoryService.saveAiError(appId, app.getUserId(), err);
-                    } catch (Exception e) {
-                        log.error("保存 AI 错误信息失败, appId={}", appId, e);
-                    }
-                });
+        chatHistoryService.saveUserMessage(appId, app.getUserId(), message);
+        // 6. 调用 AI（持久化成功后的 AI 全文、或失败时的错误信息）
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId);
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
     }
 
     /**
