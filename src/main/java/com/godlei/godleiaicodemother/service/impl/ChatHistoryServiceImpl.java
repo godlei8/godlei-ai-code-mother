@@ -24,7 +24,11 @@ import com.godlei.godleiaicodemother.service.ChatHistoryService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -41,6 +45,7 @@ import java.util.stream.Collectors;
  * @author <a href="https://github.com/godlei8">Godlei</a>
  */
 @Service
+@Slf4j
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
     private static final int MESSAGE_MAX_LEN = 60000;
@@ -240,5 +245,41 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             return text;
         }
         return text.substring(0, MESSAGE_MAX_LEN);
+    }
+
+    @Override
+    public int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount) {
+        try {
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq(ChatHistory::getAppId, appId)
+                    .orderBy(ChatHistory::getCreateTime, false)
+                    .limit(1, maxCount);
+            List<ChatHistory> historyList = this.list(queryWrapper);
+            if (CollUtil.isEmpty(historyList)) {
+                return 0;
+            }
+            // 反转列表，确保按照时间正序（老的在前，新的在后）
+            historyList = historyList.reversed();
+            // 按照时间顺序将消息添加到记忆中
+            int loadedCount = 0;
+            // 先清理历史缓存，防止重复加载
+            chatMemory.clear();
+            for (ChatHistory history : historyList) {
+                if (MessageTypeEnum.USER.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(UserMessage.from(history.getMessage()));
+                } else if (MessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(AiMessage.from(history.getMessage()));
+                } else if (MessageTypeEnum.AI_ERROR.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(AiMessage.from(history.getMessage()));
+                }
+                loadedCount++;
+            }
+            log.info("成功为 appId: {} 加载 {} 条历史消息", appId, loadedCount);
+            return loadedCount;
+        } catch (Exception e) {
+            log.error("加载历史对话失败，appId: {}, error: {}", appId, e.getMessage(), e);
+            // 加载失败不影响系统运行，只是没有历史上下文
+            return 0;
+        }
     }
 }

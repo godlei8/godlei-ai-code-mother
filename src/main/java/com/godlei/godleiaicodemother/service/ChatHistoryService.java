@@ -9,6 +9,7 @@ import com.godlei.godleiaicodemother.model.vo.ChatHistoryAdminVO;
 import com.godlei.godleiaicodemother.model.vo.ChatHistoryCursorVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.service.IService;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 /**
  * 对话历史 服务层。
@@ -51,4 +52,14 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * 管理员分页查询全站对话历史（按消息时间降序）
      */
     Page<ChatHistoryAdminVO> listByPageAdmin(ChatHistoryAdminQueryRequest request);
+
+    /**
+     * 加载对话历史到内存
+     *
+     * @param appId
+     * @param chatMemory
+     * @param maxCount 最多加载多少条
+     * @return 加载成功的条数
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }

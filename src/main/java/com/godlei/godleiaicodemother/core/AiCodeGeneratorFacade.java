@@ -90,7 +90,7 @@ public class AiCodeGeneratorFacade {
         }
 
         // 根据 appId 获取相应的 AI 服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.AiCodeGeneratorService();
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId,codeGenTypeEnum);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
