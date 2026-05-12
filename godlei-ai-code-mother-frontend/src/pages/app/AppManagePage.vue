@@ -57,54 +57,67 @@
         title-tag="h3"
       />
 
-      <a-table
-        row-key="id"
-        :columns="columns"
-        :data-source="records"
-        :pagination="pagination"
-        :loading="tableLoading"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'codeGenType'">
-            <a-tag color="blue">{{ formatCodeGenType(record.codeGenType) }}</a-tag>
-          </template>
+      <div class="table-shell">
+        <a-table
+          row-key="id"
+          :columns="columns"
+          :data-source="records"
+          :pagination="pagination"
+          :loading="tableLoading"
+          :scroll="{ x: 1460 }"
+          @change="handleTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'cover'">
+              <div class="cover-cell">
+                <img
+                  v-if="getCoverUrl(record)"
+                  :src="getCoverUrl(record)"
+                  :alt="record.appName || '应用封面'"
+                  class="cover-thumb"
+                  @error="handleCoverError(record)"
+                />
+                <div v-else class="cover-placeholder">无封面</div>
+              </div>
+            </template>
 
-          <template v-else-if="column.key === 'priority'">
-            <a-tag :color="record.priority === 99 ? 'gold' : 'default'">
-              {{ record.priority ?? 0 }}
-            </a-tag>
-          </template>
+            <template v-else-if="column.key === 'appName'">
+              <div class="app-name-cell" :title="record.appName || '未命名应用'">
+                {{ record.appName || '未命名应用' }}
+              </div>
+            </template>
 
-          <template v-else-if="column.key === 'deployedTime'">
-            {{ formatAppDateTime(record.deployedTime) }}
-          </template>
+            <template v-else-if="column.key === 'codeGenType'">
+              <a-tag color="blue">{{ formatCodeGenType(record.codeGenType) }}</a-tag>
+            </template>
 
-          <template v-else-if="column.key === 'updateTime'">
-            {{ formatAppDateTime(record.updateTime) }}
-          </template>
+            <template v-else-if="column.key === 'priority'">
+              <a-tag :color="record.priority === 99 ? 'gold' : 'default'">
+                {{ record.priority ?? 0 }}
+              </a-tag>
+            </template>
 
-          <template v-else-if="column.key === 'action'">
-            <a-space class="action-cell-space">
-              <a-button type="link" @click="openDetailModal(record)">详情</a-button>
-              <a-button
-                type="link"
-                @click="router.push(`/app/edit/${record.id}`)"
-              >
-                编辑
-              </a-button>
-              <a-button
-                type="link"
-                :disabled="record.priority === 99"
-                @click="handleFeature(record)"
-              >
-                精选
-              </a-button>
-              <a-button danger type="link" @click="handleDelete(record)">删除</a-button>
-            </a-space>
+            <template v-else-if="column.key === 'deployedTime'">
+              {{ formatAppDateTime(record.deployedTime) }}
+            </template>
+
+            <template v-else-if="column.key === 'updateTime'">
+              {{ formatAppDateTime(record.updateTime) }}
+            </template>
+
+            <template v-else-if="column.key === 'action'">
+              <a-space class="action-cell-space" size="small">
+                <a-button type="link" @click="openDetailModal(record)">详情</a-button>
+                <a-button type="link" @click="router.push(`/app/edit/${record.id}`)">编辑</a-button>
+                <a-button type="link" :disabled="record.priority === 99" @click="handleFeature(record)">
+                  精选
+                </a-button>
+                <a-button danger type="link" @click="handleDelete(record)">删除</a-button>
+              </a-space>
+            </template>
           </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </section>
 
     <AppDetailModal
@@ -131,6 +144,7 @@ import { deleteAppAdmin, listAppByPageAdmin, updateAppAdmin } from '@/api/appCon
 import { getStaticPreviewUrl } from '@/config/env'
 import { formatAppDateTime } from '@/utils/appHelpers'
 import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType } from '@/utils/codeGenTypes'
+import { getRenderableMediaUrl } from '@/utils/media'
 
 type TableRecord = API.AppVO
 
@@ -156,19 +170,21 @@ const records = ref<TableRecord[]>([])
 const total = ref(0)
 const detailOpen = ref(false)
 const detailApp = ref<TableRecord | null>(null)
+const coverLoadFailedIds = ref<Set<string>>(new Set())
 
 const codeGenTypeOptions = CODE_GEN_TYPE_OPTIONS
 
 const columns = [
-  { title: '编号', dataIndex: 'id', key: 'id', width: 180 },
-  { title: '应用名称', dataIndex: 'appName', key: 'appName', ellipsis: true },
-  { title: '生成模式', dataIndex: 'codeGenType', key: 'codeGenType', width: 140 },
-  { title: '优先级', dataIndex: 'priority', key: 'priority', width: 110 },
+  { title: '编号', dataIndex: 'id', key: 'id', width: 150 },
+  { title: '封面图', dataIndex: 'cover', key: 'cover', width: 110, align: 'center' },
+  { title: '应用名称', dataIndex: 'appName', key: 'appName', width: 220, ellipsis: true },
+  { title: '生成模式', dataIndex: 'codeGenType', key: 'codeGenType', width: 132 },
+  { title: '优先级', dataIndex: 'priority', key: 'priority', width: 96, align: 'center' },
   { title: '创建者', dataIndex: 'userId', key: 'userId', width: 180 },
-  { title: '部署标识', dataIndex: 'deployKey', key: 'deployKey', ellipsis: true },
-  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 240 },
-  { title: '更新时间', dataIndex: 'updateTime', key: 'updateTime', width: 240 },
-  { title: '操作', key: 'action', width: 240 },
+  { title: '部署标识', dataIndex: 'deployKey', key: 'deployKey', width: 150, ellipsis: true },
+  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 196 },
+  { title: '更新时间', dataIndex: 'updateTime', key: 'updateTime', width: 196 },
+  { title: '操作', key: 'action', width: 190, align: 'center' },
 ]
 
 const pagination = computed<TablePaginationConfig>(() => ({
@@ -200,6 +216,18 @@ const detailActions = computed<AppActionItem[]>(() => [
   { key: 'delete', label: '删除', danger: true },
 ])
 
+const getRecordKey = (record: TableRecord) => String(record.id ?? '')
+
+const getCoverUrl = (record: TableRecord) => {
+  return getRenderableMediaUrl(record.cover, coverLoadFailedIds.value.has(getRecordKey(record)))
+}
+
+const handleCoverError = (record: TableRecord) => {
+  const next = new Set(coverLoadFailedIds.value)
+  next.add(getRecordKey(record))
+  coverLoadFailedIds.value = next
+}
+
 const loadData = async () => {
   tableLoading.value = true
   try {
@@ -210,6 +238,7 @@ const loadData = async () => {
     }
 
     records.value = res.data.data.records ?? []
+    coverLoadFailedIds.value = new Set()
     total.value = res.data.data.totalRow ?? 0
   } catch {
     message.error('应用列表加载失败，请稍后重试')
@@ -332,22 +361,82 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.table-shell {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 -6px;
+  padding: 0 6px 8px;
+}
+
+.cover-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-thumb,
+.cover-placeholder {
+  width: 64px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.cover-thumb {
+  display: block;
+  object-fit: cover;
+  border: 1px solid rgb(148 163 184 / 18%);
+  box-shadow: 0 10px 22px rgb(148 163 184 / 12%);
+}
+
+.cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: #94a3b8;
+  font-size: 12px;
+  background: linear-gradient(180deg, rgb(248 250 252), rgb(241 245 249));
+  border: 1px dashed rgb(148 163 184 / 30%);
+}
+
+.app-name-cell {
+  color: #0f172a;
+  font-weight: 600;
+}
+
 .action-cell-space {
   display: inline-flex;
   align-items: center;
+  flex-wrap: nowrap;
   white-space: nowrap;
 }
 
 .action-cell-space :deep(.ant-btn-link) {
-  padding-inline: 0 10px;
+  padding-inline: 0 6px;
 }
 
-.action-cell-space :deep(.ant-space-item:last-child .ant-btn-link) {
-  margin-right: 14px;
+.management-table-panel :deep(.ant-table-wrapper) {
+  width: 100%;
 }
 
-.management-table-panel :deep(.ant-table-thead > tr > th:last-child),
-.management-table-panel :deep(.ant-table-tbody > tr > td:last-child) {
-  padding-right: 40px !important;
+.management-table-panel :deep(.ant-table) {
+  background: transparent;
+}
+
+.management-table-panel :deep(.ant-table-container) {
+  border-radius: 18px;
+}
+
+.management-table-panel :deep(.ant-table-thead > tr > th) {
+  white-space: nowrap;
+}
+
+.management-table-panel :deep(.ant-table-tbody > tr > td) {
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .table-shell {
+    margin: 0 -4px;
+    padding: 0 4px 6px;
+  }
 }
 </style>

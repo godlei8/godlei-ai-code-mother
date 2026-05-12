@@ -2,43 +2,66 @@ package com.godlei.godleiaicodemother.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.godlei.godleiaicodemother.exception.BusinessException;
 import com.godlei.godleiaicodemother.exception.ErrorCode;
 import com.godlei.godleiaicodemother.exception.ThrowUtils;
+import com.godlei.godleiaicodemother.manager.CosManager;
+import com.godlei.godleiaicodemother.mapper.UserMapper;
 import com.godlei.godleiaicodemother.model.dto.user.UserPasswordUpdateRequest;
 import com.godlei.godleiaicodemother.model.dto.user.UserProfileUpdateRequest;
 import com.godlei.godleiaicodemother.model.dto.user.UserQueryRequest;
 import com.godlei.godleiaicodemother.model.entity.User;
-import com.godlei.godleiaicodemother.mapper.UserMapper;
 import com.godlei.godleiaicodemother.model.enums.UserRoleEnum;
 import com.godlei.godleiaicodemother.model.vo.LoginUserVO;
 import com.godlei.godleiaicodemother.model.vo.UserVO;
 import com.godlei.godleiaicodemother.service.UserService;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.spring.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.godlei.godleiaicodemother.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
- * 用户 服务层实现。
- *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
+ * 用户服务实现
  */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    private static final long AVATAR_MAX_SIZE = 5L * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_AVATAR_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
+
+    private static final Set<String> ALLOWED_AVATAR_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif"
+    );
+
+    @Resource
+    private CosManager cosManager;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
-        // 1. 校验参数
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
@@ -51,16 +74,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        // 2. 查询用户是否已存在
+
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount", userAccount);
         long count = this.mapper.selectCountByQuery(queryWrapper);
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
         }
-        // 3. 加密密码
+
         String encryptPassword = getEncryptPassword(userPassword);
-        // 4. 创建用户，插入数据库
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
@@ -85,7 +107,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
-        // 1. 校验参数
         if (StrUtil.hasBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
@@ -95,9 +116,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
-        // 2. 加密
+
         String encryptPassword = getEncryptPassword(userPassword);
-        // 3. 查询用户是否存在
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount", userAccount);
         queryWrapper.eq("userPassword", encryptPassword);
@@ -105,21 +125,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 4. 如果用户存在，记录用户的登录态
+
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
-        // 5. 返回脱敏的用户信息
         return this.getLoginUserVO(user);
     }
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        // 先判断用户是否登录
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
         if (currentUser == null || currentUser.getId() == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        // 从数据库查询当前用户信息
+
         long userId = currentUser.getId();
         currentUser = this.getById(userId);
         if (currentUser == null) {
@@ -145,6 +163,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean result = this.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return true;
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile avatarFile, User loginUser) {
+        ThrowUtils.throwIf(avatarFile == null || avatarFile.isEmpty(), ErrorCode.PARAMS_ERROR, "头像文件不能为空");
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
+        validateAvatarFile(avatarFile);
+
+        String extension = resolveAvatarExtension(avatarFile);
+        File tempFile = null;
+        try {
+            tempFile = File.createTempFile("avatar-", "." + extension);
+            avatarFile.transferTo(tempFile);
+            String avatarKey = buildAvatarKey(loginUser.getId(), extension);
+            String avatarUrl = cosManager.uploadFile(avatarKey, tempFile);
+            ThrowUtils.throwIf(StrUtil.isBlank(avatarUrl), ErrorCode.OPERATION_ERROR, "头像上传失败");
+            return avatarUrl;
+        } catch (IOException e) {
+            log.error("头像上传失败, userId: {}", loginUser.getId(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "头像上传失败");
+        } finally {
+            if (tempFile != null && tempFile.exists()) {
+                FileUtil.del(tempFile);
+            }
+        }
     }
 
     @Override
@@ -202,12 +245,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean userLogout(HttpServletRequest request) {
-        // 先判断用户是否登录
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         if (userObj == null) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "用户未登录");
         }
-        // 移除登录态
         request.getSession().removeAttribute(USER_LOGIN_STATE);
         return true;
     }
@@ -225,8 +266,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String sortField = userQueryRequest.getSortField();
         String sortOrder = userQueryRequest.getSortOrder();
         return QueryWrapper.create()
-                .eq("id", id) // where id = ${id}
-                .eq("userRole", userRole) // and userRole = ${userRole}
+                .eq("id", id)
+                .eq("userRole", userRole)
                 .like("userAccount", userAccount)
                 .like("userName", userName)
                 .like("userProfile", userProfile)
@@ -235,8 +276,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public String getEncryptPassword(String userPassword) {
-        // 盐值，混淆密码
-        final String SALT = "yupi";
-        return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
+        final String salt = "yupi";
+        return DigestUtils.md5DigestAsHex((userPassword + salt).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void validateAvatarFile(MultipartFile avatarFile) {
+        ThrowUtils.throwIf(avatarFile.getSize() > AVATAR_MAX_SIZE, ErrorCode.PARAMS_ERROR, "头像大小不能超过 5MB");
+
+        String extension = resolveAvatarExtension(avatarFile);
+        ThrowUtils.throwIf(!ALLOWED_AVATAR_EXTENSIONS.contains(extension), ErrorCode.PARAMS_ERROR, "头像格式不支持");
+
+        String contentType = StrUtil.trim(avatarFile.getContentType());
+        ThrowUtils.throwIf(StrUtil.isBlank(contentType) || !ALLOWED_AVATAR_CONTENT_TYPES.contains(contentType),
+                ErrorCode.PARAMS_ERROR, "头像格式不支持");
+    }
+
+    private String resolveAvatarExtension(MultipartFile avatarFile) {
+        String extension = FileUtil.extName(avatarFile.getOriginalFilename());
+        return StrUtil.blankToDefault(StrUtil.trim(extension).toLowerCase(), "jpg");
+    }
+
+    private String buildAvatarKey(Long userId, String extension) {
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String fileName = String.format("user-%s-%s.%s", userId, UUID.randomUUID().toString().replace("-", ""), extension);
+        return String.format("/avatars/%s/%s", datePath, fileName);
     }
 }

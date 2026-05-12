@@ -15,13 +15,16 @@ import com.godlei.godleiaicodemother.model.vo.LoginUserVO;
 import com.godlei.godleiaicodemother.model.vo.UserVO;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.service.UserService;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -91,6 +94,18 @@ public class UserController {
         User loginUser = userService.getLoginUser(request);
         boolean result = userService.updateMyUser(userProfileUpdateRequest, loginUser);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 当前登录用户上传头像
+     */
+    @PostMapping(value = "/my/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<String> uploadMyAvatar(@RequestParam("file") MultipartFile file,
+                                               HttpServletRequest request) {
+        ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR, "头像文件不能为空");
+        User loginUser = userService.getLoginUser(request);
+        String avatarUrl = userService.uploadAvatar(file, loginUser);
+        return ResultUtils.success(avatarUrl);
     }
 
     /**

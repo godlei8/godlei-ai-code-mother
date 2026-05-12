@@ -520,19 +520,19 @@ onMounted(async () => {
 .preview-column :deep(.frame-actions > a) {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  padding: 0 4px;
-  font-size: 15px;
+  min-height: 30px;
+  padding: 0 2px;
+  font-size: 13px;
   font-weight: 500;
   color: #2563eb;
   white-space: nowrap;
 }
 
 .preview-action-button {
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 11px;
-  font-size: 15px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -540,14 +540,14 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 104px;
+  gap: 5px;
+  min-width: 96px;
   box-shadow: 0 10px 24px rgb(59 130 246 / 20%);
 }
 
 .preview-deploy-icon {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 .preview-column :deep(.preview-frame) {
@@ -582,14 +582,15 @@ onMounted(async () => {
   }
 
   .preview-action-button {
-    padding: 0 12px;
-    font-size: 14px;
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .preview-column :deep(.frame-actions > a) {
-    min-height: 30px;
+    min-height: 28px;
     padding: 0;
-    font-size: 14px;
+    font-size: 12px;
   }
 }
 </style>

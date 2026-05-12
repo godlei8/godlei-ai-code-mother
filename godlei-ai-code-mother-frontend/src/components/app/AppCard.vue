@@ -11,7 +11,12 @@
     <div class="card-stage">
       <div class="card-visual-frame">
         <div class="card-visual">
-          <img v-if="app.cover" :src="app.cover" :alt="profile.title" />
+          <img
+            v-if="coverUrl"
+            :src="coverUrl"
+            :alt="profile.title"
+            @error="coverLoadFailed = true"
+          />
           <div v-else class="visual-fallback">
             <span>{{ codeGenLabel }}</span>
             <strong>{{ profile.title }}</strong>
@@ -77,10 +82,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { AppActionItem } from '@/components/app/appAction'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
 import { resolveAppCardProfile } from '@/utils/appCard'
+import { getRenderableMediaUrl } from '@/utils/media'
 
 const props = withDefaults(
   defineProps<{
@@ -103,13 +109,22 @@ const emit = defineEmits<{
 
 const overlayActionKeys = new Set(['chat', 'edit', 'reuse'])
 const utilityActionKeys = new Set(['preview', 'delete'])
+const coverLoadFailed = ref(false)
 
 const codeGenLabel = computed(() => formatCodeGenType(props.app.codeGenType))
 const profile = computed(() => resolveAppCardProfile(props.app))
+const coverUrl = computed(() => getRenderableMediaUrl(props.app.cover, coverLoadFailed.value))
 const primaryActions = computed(() =>
   props.actions.filter((action) => overlayActionKeys.has(action.key)).slice(0, 2),
 )
 const utilityActions = computed(() => props.actions.filter((action) => utilityActionKeys.has(action.key)))
+
+watch(
+  () => props.app.cover,
+  () => {
+    coverLoadFailed.value = false
+  },
+)
 
 const handleSelect = () => {
   if (!props.clickable) {

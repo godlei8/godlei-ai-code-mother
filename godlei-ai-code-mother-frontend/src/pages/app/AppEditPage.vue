@@ -14,9 +14,7 @@
       >
         <template #extra>
           <a-space wrap>
-            <a-button @click="router.push(`/app/chat/${appId}`)">
-              返回对话页
-            </a-button>
+            <a-button @click="router.push(`/app/chat/${appId}`)">返回对话页</a-button>
             <a-button v-if="previewUrl" @click="handleOpenPreview">打开预览</a-button>
           </a-space>
         </template>
@@ -31,6 +29,25 @@
 
         <a-form-item v-if="isAdminMode" label="应用封面">
           <a-input v-model:value="formState.cover" placeholder="请输入封面图片地址" />
+
+          <div class="cover-preview-panel">
+            <div class="cover-preview-head">
+              <span>封面回显</span>
+              <small>保存前可实时确认当前封面</small>
+            </div>
+
+            <div v-if="coverPreviewUrl" class="cover-preview-card">
+              <img
+                :src="coverPreviewUrl"
+                :alt="formState.appName.trim() || '应用封面'"
+                class="cover-preview-image"
+              />
+            </div>
+
+            <div v-else class="cover-preview-empty">
+              输入封面图片地址后，这里会实时显示当前封面。
+            </div>
+          </div>
         </a-form-item>
 
         <a-form-item v-if="isAdminMode" label="优先级">
@@ -38,9 +55,7 @@
         </a-form-item>
 
         <div class="form-actions">
-          <a-button @click="router.push(`/app/chat/${appId}`)">
-            取消
-          </a-button>
+          <a-button @click="router.push(`/app/chat/${appId}`)">取消</a-button>
           <a-button type="primary" :loading="submitLoading" @click="handleSubmit">保存修改</a-button>
         </div>
       </a-form>
@@ -68,6 +83,7 @@ import {
   resolveAppEditorMode,
 } from '@/utils/appHelpers'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
+import { getTrimmedMediaUrl } from '@/utils/media'
 
 const route = useRoute()
 const router = useRouter()
@@ -99,6 +115,8 @@ const previewUrl = computed(() => {
   }
   return getStaticPreviewUrl(appDetail.value.codeGenType, appDetail.value.id)
 })
+
+const coverPreviewUrl = computed(() => getTrimmedMediaUrl(formState.cover))
 
 const codeGenLabel = computed(() => formatCodeGenType(appDetail.value?.codeGenType))
 const formattedUpdateTime = computed(() =>
@@ -243,6 +261,58 @@ onMounted(async () => {
   margin-top: 26px;
 }
 
+.cover-preview-panel {
+  margin-top: 14px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(248 250 252 / 88%));
+  border: 1px solid rgb(148 163 184 / 14%);
+  border-radius: 18px;
+}
+
+.cover-preview-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.cover-preview-head small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cover-preview-card {
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgb(148 163 184 / 16%);
+  box-shadow: 0 18px 36px rgb(148 163 184 / 12%);
+}
+
+.cover-preview-image {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+}
+
+.cover-preview-empty {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  margin-top: 14px;
+  padding: 18px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+  background: linear-gradient(180deg, rgb(248 250 252), rgb(241 245 249));
+  border: 1px dashed rgb(148 163 184 / 28%);
+  border-radius: 18px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -250,6 +320,11 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
+  .cover-preview-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .form-actions {
     flex-direction: column-reverse;
   }

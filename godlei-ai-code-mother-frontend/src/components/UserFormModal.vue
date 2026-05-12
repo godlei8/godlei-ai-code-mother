@@ -9,11 +9,7 @@
     @cancel="handleCancel"
     @ok="handleOk"
   >
-    <a-form
-      ref="formRef"
-      layout="vertical"
-      :model="formState"
-    >
+    <a-form ref="formRef" layout="vertical" :model="formState">
       <a-alert
         v-if="mode === 'create'"
         type="info"
@@ -30,12 +26,7 @@
         message="当前为前端兼容模式，普通用户提交后会先保存为本地草稿。"
       />
 
-      <a-form-item
-        v-if="showAccount"
-        label="用户账号"
-        name="userAccount"
-        :rules="accountRules"
-      >
+      <a-form-item v-if="showAccount" label="用户账号" name="userAccount" :rules="accountRules">
         <a-input
           v-model:value="formState.userAccount"
           :disabled="readonlyAccount"
@@ -56,8 +47,41 @@
         />
       </a-form-item>
 
-      <a-form-item label="头像地址" name="userAvatar">
+      <a-form-item :label="avatarFieldLabel" name="userAvatar">
+        <div v-if="enableAvatarUpload" class="avatar-upload-field">
+          <div class="avatar-upload-panel">
+            <a-avatar :src="avatarPreviewUrl || undefined" :size="72" class="avatar-preview">
+              {{ avatarFallbackText }}
+            </a-avatar>
+
+            <div class="avatar-upload-copy">
+              <a-space wrap>
+                <a-button :loading="avatarUploading" @click="triggerAvatarSelect">上传头像</a-button>
+                <a-button v-if="avatarPreviewUrl" @click="clearAvatar">移除头像</a-button>
+              </a-space>
+              <p class="avatar-upload-tip">
+                支持 JPG、PNG、WEBP、GIF，大小不超过 5MB。上传成功后还需要点击“{{ confirmText }}”。
+              </p>
+            </div>
+          </div>
+
+          <input
+            ref="avatarInputRef"
+            type="file"
+            :accept="AVATAR_ACCEPT_ATTRIBUTE"
+            class="avatar-file-input"
+            @change="handleAvatarFileChange"
+          />
+
+          <a-input
+            v-model:value="formState.userAvatar"
+            placeholder="也可以直接粘贴头像 URL"
+            autocomplete="off"
+          />
+        </div>
+
         <a-input
+          v-else
           v-model:value="formState.userAvatar"
           placeholder="请输入头像 URL，可留空"
           autocomplete="off"
@@ -90,7 +114,14 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { message } from 'ant-design-vue'
 import type { FormInstance } from 'ant-design-vue'
+import { uploadMyAvatar } from '@/api/userController'
+import {
+  AVATAR_ACCEPT_ATTRIBUTE,
+  getTrimmedMediaUrl,
+  validateAvatarUploadFile,
+} from '@/utils/media'
 
 type UserFormState = Pick<
   API.UserAddRequest & API.UserUpdateRequest,
@@ -128,12 +159,27 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInstance>()
+const avatarInputRef = ref<HTMLInputElement>()
+const avatarUploading = ref(false)
 const formState = reactive<UserFormState>({
   userAccount: '',
   userName: '',
   userAvatar: '',
   userProfile: '',
   userRole: 'user',
+})
+
+const enableAvatarUpload = computed(() => {
+  return props.mode === 'profile' && props.profileMode === 'persisted'
+})
+
+const avatarFieldLabel = computed(() => (enableAvatarUpload.value ? '头像' : '头像地址'))
+
+const avatarPreviewUrl = computed(() => getTrimmedMediaUrl(formState.userAvatar))
+
+const avatarFallbackText = computed(() => {
+  const seed = formState.userName?.trim() || formState.userAccount?.trim() || 'U'
+  return seed.slice(0, 1).toUpperCase()
 })
 
 const roleOptions = [
@@ -165,9 +211,11 @@ watch(
   ([open]) => {
     if (open) {
       resetFormState()
-    } else {
-      formRef.value?.clearValidate()
+      return
     }
+
+    avatarUploading.value = false
+    formRef.value?.clearValidate()
   },
   {
     immediate: true,
@@ -175,11 +223,66 @@ watch(
   },
 )
 
+const triggerAvatarSelect = () => {
+  if (avatarUploading.value) {
+    return
+  }
+
+  avatarInputRef.value?.click()
+}
+
+const clearAvatar = () => {
+  formState.userAvatar = ''
+}
+
+const handleAvatarFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement | null
+  const file = input?.files?.[0]
+
+  if (input) {
+    input.value = ''
+  }
+
+  if (!file) {
+    return
+  }
+
+  const validationMessage = validateAvatarUploadFile(file)
+  if (validationMessage) {
+    message.warning(validationMessage)
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  avatarUploading.value = true
+  try {
+    const res = await uploadMyAvatar(formData)
+    if (res.data?.code !== 0 || !res.data.data) {
+      message.error(res.data?.message || '头像上传失败')
+      return
+    }
+
+    formState.userAvatar = getTrimmedMediaUrl(res.data.data)
+    message.success('头像上传成功，保存资料后即可生效')
+  } catch {
+    message.error('头像上传失败，请稍后重试')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
 const handleCancel = () => {
   emit('cancel')
 }
 
 const handleOk = async () => {
+  if (avatarUploading.value) {
+    message.warning('头像还在上传中，请稍候')
+    return
+  }
+
   await formRef.value?.validate()
 
   emit('submit', {
@@ -195,5 +298,48 @@ const handleOk = async () => {
 <style scoped>
 .modal-alert {
   margin-bottom: 16px;
+}
+
+.avatar-upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.avatar-upload-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(248 250 252 / 88%));
+  border: 1px solid rgb(148 163 184 / 16%);
+  border-radius: 16px;
+}
+
+.avatar-preview {
+  flex: 0 0 auto;
+  box-shadow: 0 16px 32px rgb(59 130 246 / 14%);
+}
+
+.avatar-upload-copy {
+  min-width: 0;
+}
+
+.avatar-upload-tip {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.avatar-file-input {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .avatar-upload-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>

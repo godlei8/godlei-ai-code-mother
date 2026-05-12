@@ -9,7 +9,12 @@
   >
     <div v-if="app" class="app-detail-modal">
       <div class="detail-visual">
-        <img v-if="app.cover" :src="app.cover" :alt="profile.title" />
+        <img
+          v-if="coverUrl"
+          :src="coverUrl"
+          :alt="profile.title"
+          @error="coverLoadFailed = true"
+        />
         <div v-else class="detail-visual-fallback">
           <span>{{ codeGenLabel }}</span>
           <strong>{{ profile.title }}</strong>
@@ -52,13 +57,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { AppActionItem } from '@/components/app/appAction'
 import DetailStatsGrid from '@/components/common/DetailStatsGrid.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
 import { resolveAppCardProfile } from '@/utils/appCard'
 import { formatAppDateTime } from '@/utils/appHelpers'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
+import { getRenderableMediaUrl } from '@/utils/media'
 
 const props = withDefaults(
   defineProps<{
@@ -81,11 +87,14 @@ defineEmits<{
   action: [key: string]
 }>()
 
+const coverLoadFailed = ref(false)
+
 const profile = computed(() =>
   resolveAppCardProfile((props.app ?? {}) as API.AppVO),
 )
 
 const codeGenLabel = computed(() => formatCodeGenType(props.app?.codeGenType))
+const coverUrl = computed(() => getRenderableMediaUrl(props.app?.cover, coverLoadFailed.value))
 const promptText = computed(() => props.app?.initPrompt?.trim() ?? '')
 const detailDescription = computed(() => {
   return (
@@ -117,6 +126,13 @@ const detailItems = computed(() => [
     value: props.previewUrl ? '可预览' : '待生成',
   },
 ])
+
+watch(
+  () => props.app?.cover,
+  () => {
+    coverLoadFailed.value = false
+  },
+)
 </script>
 
 <style scoped>

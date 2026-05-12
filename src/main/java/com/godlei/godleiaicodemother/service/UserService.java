@@ -10,6 +10,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -63,6 +64,15 @@ public interface UserService extends IService<User> {
      * @return 是否更新成功
      */
     boolean updateMyUser(UserProfileUpdateRequest userProfileUpdateRequest, User loginUser);
+
+    /**
+     * 上传当前登录用户头像到 COS 并返回访问 URL
+     *
+     * @param avatarFile 上传的头像文件
+     * @param loginUser 当前登录用户
+     * @return 头像 URL
+     */
+    String uploadAvatar(MultipartFile avatarFile, User loginUser);
 
     /**
      * 当前登录用户修改密码
