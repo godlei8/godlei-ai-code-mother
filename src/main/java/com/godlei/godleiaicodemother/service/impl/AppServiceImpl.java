@@ -9,6 +9,7 @@ import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
 import com.godlei.godleiaicodemother.core.builder.VueProjectBuilder;
 import com.godlei.godleiaicodemother.core.handler.StreamHandlerExecutor;
 import com.godlei.godleiaicodemother.model.enums.CodeGenTypeEnum;
+import com.godlei.godleiaicodemother.service.ScreenshotService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -58,6 +59,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AppArtifactCleanupService appArtifactCleanupService;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
@@ -162,10 +166,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
         // 10. 构建应用访问 URL
-        return String.format("%s/%s/", deployHost, deployKey);
 
+        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
         // 11. 异步生成截图并且更新应用封面
-        // generateAppScreenshotAsync(appId, appDeployUrl);
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
+    }
+
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程并执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新数据库的封面
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
     }
 
     @Override
