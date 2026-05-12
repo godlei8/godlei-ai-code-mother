@@ -38,17 +38,25 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+# 添加 COS 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: cos.godlei8.top
+    secretId: <you id>
+    secretKey: <you key>
+    region: ap-chengdu
+    bucket: godlei-1311686380
 langchain4j:
   open-ai:
     chat-model:
-      api-key: <你的key>
-      model-name: deepseek-v4-flash
-      log-requests: true
-      log-responses: true
-      base-url: https://api.deepseek.com
-      max-tokens: 10000
-      strict-json-schema: true
-      response-format: json_object
+     api-key: <你的key>
+     model-name: deepseek-v4-flash
+     log-requests: true
+     log-responses: true
+     base-url: https://api.deepseek.com
+     max-tokens: 10000
+     strict-json-schema: true
+     response-format: json_object
     streaming-chat-model:
         api-key: <你的key>
         model-name: deepseek-v4-flash
