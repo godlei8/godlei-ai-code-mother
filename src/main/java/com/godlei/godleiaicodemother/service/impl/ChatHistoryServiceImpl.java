@@ -250,6 +250,11 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     @Override
     public int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount) {
         try {
+            List<?> existingMessages = chatMemory.messages();
+            if (CollUtil.isNotEmpty(existingMessages)) {
+                log.info("appId: {} 已创建 {} 条聊天记忆，跳过数据库回填", appId, existingMessages.size());
+                return existingMessages.size();
+            }
             QueryWrapper queryWrapper = QueryWrapper.create()
                     .eq(ChatHistory::getAppId, appId)
                     .orderBy(ChatHistory::getCreateTime, false)
@@ -263,7 +268,6 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             // 按照时间顺序将消息添加到记忆中
             int loadedCount = 0;
             // 先清理历史缓存，防止重复加载
-            chatMemory.clear();
             for (ChatHistory history : historyList) {
                 if (MessageTypeEnum.USER.getValue().equals(history.getMessageType())) {
                     chatMemory.add(UserMessage.from(history.getMessage()));

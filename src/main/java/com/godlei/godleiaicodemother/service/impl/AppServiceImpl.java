@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
+import com.godlei.godleiaicodemother.core.builder.VueProjectBuilder;
 import com.godlei.godleiaicodemother.core.handler.StreamHandlerExecutor;
 import com.godlei.godleiaicodemother.model.enums.CodeGenTypeEnum;
 import com.mybatisflex.core.paginate.Page;
@@ -57,6 +58,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AppArtifactCleanupService appArtifactCleanupService;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     private static final String DEFAULT_APP_NAME = "未命名应用";
 
@@ -132,17 +136,17 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码路径不存在，请先生成应用");
         }
         // 7. Vue 项目特殊处理：执行构建
-//        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-//        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
-//            // Vue 项目需要构建
-//            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
-//            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请重试");
-//            // 检查 dist 目录是否存在
-//            File distDir = new File(sourceDirPath, "dist");
-//            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
-//            // 构建完成后，需要将构建后的文件复制到部署目录
-//            sourceDir = distDir;
-//        }
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            // Vue 项目需要构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请重试");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourceDirPath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
+            // 构建完成后，需要将构建后的文件复制到部署目录
+            sourceDir = distDir;
+        }
         // 8. 复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {

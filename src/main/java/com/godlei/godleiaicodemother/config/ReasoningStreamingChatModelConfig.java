@@ -47,6 +47,9 @@ public class ReasoningStreamingChatModelConfig {
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
+                .returnThinking(true)
+                .sendThinking(true, "reasoning_content")
+                .accumulateToolCallId(false)
 //                .listeners(List.of(aiModelMonitorListener))
                 .build();
     }
