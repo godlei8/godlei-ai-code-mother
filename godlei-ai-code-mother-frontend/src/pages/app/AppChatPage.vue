@@ -41,11 +41,11 @@
           :empty-description="previewEmptyDescription"
         >
           <template #actions>
-            <a-button @click="router.push(`/app/edit/${appId}`)">
+            <a-button class="preview-action-button" @click="router.push(`/app/edit/${appId}`)">
               编辑信息
             </a-button>
             <a-button
-              class="preview-deploy-button"
+              class="preview-action-button preview-deploy-button"
               type="primary"
               :loading="deploying"
               :disabled="!appDetail?.id || isReadOnlyView"
@@ -512,23 +512,42 @@ onMounted(async () => {
 }
 
 .preview-column :deep(.frame-actions) {
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.preview-column :deep(.frame-actions > a) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.preview-action-button {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 15px;
+  white-space: nowrap;
 }
 
 .preview-deploy-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 120px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 12px;
+  gap: 6px;
+  min-width: 104px;
+  box-shadow: 0 10px 24px rgb(59 130 246 / 20%);
 }
 
 .preview-deploy-icon {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .preview-column :deep(.preview-frame) {
@@ -556,6 +575,21 @@ onMounted(async () => {
   .chat-column {
     min-height: auto;
     padding: 16px;
+  }
+
+  .preview-column :deep(.frame-actions) {
+    justify-content: flex-start;
+  }
+
+  .preview-action-button {
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .preview-column :deep(.frame-actions > a) {
+    min-height: 30px;
+    padding: 0;
+    font-size: 14px;
   }
 }
 </style>
