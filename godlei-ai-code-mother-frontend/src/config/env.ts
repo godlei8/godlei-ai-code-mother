@@ -13,10 +13,10 @@ type AppRuntimeEnv = {
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '')
 
 export const resolveAppRuntimeEnv = (env: AppRuntimeEnvInput): AppRuntimeEnv => {
-  const apiBaseUrl = trimTrailingSlash(env.VITE_API_BASE_URL || 'http://localhost:8123/api')
+  const apiBaseUrl = trimTrailingSlash(env.VITE_API_BASE_URL || '/api')
   const deployBaseUrl = trimTrailingSlash(env.VITE_APP_DEPLOY_BASE_URL || 'http://localhost')
   const previewBaseUrl = trimTrailingSlash(
-    env.VITE_APP_PREVIEW_BASE_URL || 'http://localhost:8123/api/static',
+    env.VITE_APP_PREVIEW_BASE_URL || '/api/static',
   )
 
   return {

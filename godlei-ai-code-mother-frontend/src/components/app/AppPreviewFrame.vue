@@ -58,6 +58,7 @@
         </div>
 
         <iframe
+          ref="iframeRef"
           :key="src"
           :src="src"
           class="preview-iframe"
@@ -75,6 +76,10 @@
 import { ref, watch } from 'vue'
 import AppEmptyState from '@/components/app/AppEmptyState.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
+
+const emit = defineEmits<{
+  frameLoad: [iframe: HTMLIFrameElement | null]
+}>()
 
 const props = withDefaults(
   defineProps<{
@@ -94,6 +99,7 @@ const props = withDefaults(
 
 const hasLoaded = ref(false)
 const hasError = ref(false)
+const iframeRef = ref<HTMLIFrameElement | null>(null)
 
 watch(
   () => props.src,
@@ -105,11 +111,18 @@ watch(
 
 const handleLoad = () => {
   hasLoaded.value = true
+  emit('frameLoad', iframeRef.value)
 }
 
 const handleError = () => {
   hasError.value = true
 }
+
+const getIframeElement = () => iframeRef.value
+
+defineExpose({
+  getIframeElement,
+})
 </script>
 
 <style scoped>

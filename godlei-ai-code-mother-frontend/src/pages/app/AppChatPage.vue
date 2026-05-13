@@ -31,6 +31,18 @@
           <a :href="deployedUrl" target="_blank" rel="noreferrer">{{ deployedUrl }}</a>
         </div>
 
+        <a-alert
+          v-if="selectedElementInfo"
+          class="selected-element-alert"
+          type="info"
+          show-icon
+          closable
+          @close="handleClearSelectedElement"
+        >
+          <template #message>已选中元素：{{ selectedElementLabel }}</template>
+          <template #description>{{ selectedElementDescription }}</template>
+        </a-alert>
+
         <AppChatInput
           v-model="draftMessage"
           :loading="sending"
@@ -42,10 +54,12 @@
 
       <div class="preview-column">
         <AppPreviewFrame
+          ref="previewFrameRef"
           :title="appDetail?.appName || '应用预览'"
           :src="previewSrc"
           :loading="sending"
           :empty-description="previewEmptyDescription"
+          @frame-load="handlePreviewFrameLoad"
         >
           <template #actions>
             <a-button class="preview-action-button" @click="router.push(`/app/edit/${appId}`)">
@@ -58,6 +72,14 @@
               @click="handleDownloadCode"
             >
               下载代码
+            </a-button>
+            <a-button
+              class="preview-action-button"
+              :type="visualEditMode ? 'default' : 'dashed'"
+              :disabled="!previewSrc || sending || isReadOnlyView"
+              @click="handleToggleVisualEditMode"
+            >
+              {{ visualEditMode ? '退出编辑模式' : '可视化编辑' }}
             </a-button>
             <a-button
               class="preview-action-button preview-deploy-button"
@@ -108,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -123,6 +145,11 @@ import { useLoginUserStore } from '@/stores/loginUser'
 import { consumeSseChunk, createSseAccumulator, flushSseAccumulator } from '@/utils/appStream'
 import { formatCodeGenType } from '@/utils/codeGenTypes'
 import { resolveDownloadFilename, triggerBlobDownload } from '@/utils/download'
+import {
+  createVisualEditorBridge,
+  type VisualEditorBridge,
+  type VisualSelectedElementInfo,
+} from '@/utils/visualEditorBridge'
 
 type ChatMessage = {
   id: string
@@ -130,6 +157,10 @@ type ChatMessage = {
   content: string
   createdTime?: string
   messageType?: string
+}
+
+type PreviewFrameExpose = {
+  getIframeElement: () => HTMLIFrameElement | null
 }
 
 const CHAT_HISTORY_PAGE_SIZE = 10
@@ -154,6 +185,13 @@ const deployedUrlFromAction = ref('')
 const appDetail = ref<API.AppVO | API.App | null>(null)
 const messages = ref<ChatMessage[]>([])
 
+const previewFrameRef = ref<PreviewFrameExpose | null>(null)
+const visualEditMode = ref(false)
+const selectedElementInfo = ref<VisualSelectedElementInfo | null>(null)
+const visualEditorBridge = ref<VisualEditorBridge | null>(null)
+const bridgeIframe = ref<HTMLIFrameElement | null>(null)
+const previewFrameLoaded = ref(false)
+
 const appId = computed(() => String(route.params.id ?? '').trim())
 const safeAppId = computed<API.LongId>(() => appId.value)
 const safeAppIdParam = computed(() => safeAppId.value as unknown as number)
@@ -176,7 +214,7 @@ const headerDescription = computed(() => {
   if (isAdminViewer.value) {
     return '当前以管理员身份查看自己的应用，对话与预览链路保持正常可操作。'
   }
-  return '左侧与 AI 持续对话生成页面，右侧会在生成完成后自动刷新网站预览。'
+  return '左侧与 AI 对话生成页面，右侧会在生成完成后自动刷新网站预览。'
 })
 
 const codeGenTypeLabel = computed(() => formatCodeGenType(appDetail.value?.codeGenType))
@@ -185,7 +223,6 @@ const previewSrc = computed(() => {
   if (!previewReady.value || !appDetail.value?.id || !appDetail.value.codeGenType) {
     return ''
   }
-
   const baseSrc = getStaticPreviewUrl(appDetail.value.codeGenType, appDetail.value.id)
   return `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}t=${previewVersion.value}`
 })
@@ -201,7 +238,6 @@ const deployedUrl = computed(() => {
   if (deployedUrlFromAction.value) {
     return deployedUrlFromAction.value
   }
-
   const deployKey = appDetail.value?.deployKey
   return deployKey ? getDeployUrl(deployKey) : ''
 })
@@ -217,6 +253,31 @@ const deployButtonText = computed(() => {
   return deployedUrl.value ? '重新部署' : '部署应用'
 })
 
+const selectedElementLabel = computed(() => {
+  if (!selectedElementInfo.value) {
+    return ''
+  }
+  const { tagName, id, className } = selectedElementInfo.value
+  const idPart = id ? `#${id}` : ''
+  const classPart = className
+    ? `.${className
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('.')}`
+    : ''
+  return `<${tagName}>${idPart}${classPart}`
+})
+
+const selectedElementDescription = computed(() => {
+  if (!selectedElementInfo.value) {
+    return ''
+  }
+  const selector = selectedElementInfo.value.selector || '-'
+  const textSnippet = selectedElementInfo.value.textSnippet || '（该元素无可见文本）'
+  return `选择器：${selector}；文本片段：${textSnippet}`
+})
+
 const mapHistoryMessageRole = (messageType?: string): ChatMessage['role'] => {
   return messageType === 'user' ? 'user' : 'assistant'
 }
@@ -225,7 +286,6 @@ const normalizeHistoryMessageContent = (record: API.ChatHistoryVO) => {
   if (record.messageType === 'ai_error') {
     return `AI 生成失败：${record.message || '未知错误'}`
   }
-
   return record.message || ''
 }
 
@@ -240,7 +300,6 @@ const toChatMessage = (record: API.ChatHistoryVO): ChatMessage => ({
 const mergeChatMessages = (nextMessages: ChatMessage[], currentMessages: ChatMessage[]) => {
   const merged: ChatMessage[] = []
   const seen = new Set<string>()
-
   for (const item of [...nextMessages, ...currentMessages]) {
     if (seen.has(item.id)) {
       continue
@@ -248,7 +307,6 @@ const mergeChatMessages = (nextMessages: ChatMessage[], currentMessages: ChatMes
     seen.add(item.id)
     merged.push(item)
   }
-
   return merged
 }
 
@@ -282,24 +340,128 @@ const createChatMessage = (role: ChatMessage['role'], content = ''): ChatMessage
   content,
 })
 
+const getPreviewIframe = () => previewFrameRef.value?.getIframeElement() ?? null
+
+const disposeVisualEditorBridge = () => {
+  visualEditorBridge.value?.dispose()
+  visualEditorBridge.value = null
+  bridgeIframe.value = null
+}
+
+const ensureVisualEditorBridge = () => {
+  const iframe = getPreviewIframe()
+  if (!iframe?.contentDocument || !iframe.contentWindow) {
+    return null
+  }
+  if (visualEditorBridge.value && bridgeIframe.value === iframe) {
+    return visualEditorBridge.value
+  }
+  disposeVisualEditorBridge()
+  bridgeIframe.value = iframe
+  visualEditorBridge.value = createVisualEditorBridge({
+    iframe,
+    onSelect: (payload) => {
+      selectedElementInfo.value = payload
+    },
+  })
+  return visualEditorBridge.value
+}
+
+const waitForVisualEditorBridge = async (retryTimes = 6, delayMs = 150) => {
+  for (let index = 0; index < retryTimes; index += 1) {
+    const bridge = ensureVisualEditorBridge()
+    if (bridge && bridge.start()) {
+      return true
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs))
+  }
+  return false
+}
+
+const handleClearSelectedElement = () => {
+  selectedElementInfo.value = null
+  visualEditorBridge.value?.clearSelection()
+}
+
+const stopVisualEditMode = () => {
+  visualEditMode.value = false
+  visualEditorBridge.value?.stop()
+}
+
+const formatSelectedElementPrompt = (info: VisualSelectedElementInfo) => {
+  return [
+    '【可视化编辑上下文】',
+    `目标元素标签：${info.tagName}`,
+    `目标元素选择器：${info.selector || '-'}`,
+    `目标元素 ID：${info.id || '-'}`,
+    `目标元素 class：${info.className || '-'}`,
+    `目标元素文本：${info.textSnippet || '-'}`,
+    '请优先围绕这个选中元素进行修改，并保持页面其余部分功能正常。',
+  ].join('\n')
+}
+
+const buildRequestMessage = (content: string) => {
+  const trimmed = content.trim()
+  if (!selectedElementInfo.value) {
+    return trimmed
+  }
+  return `${trimmed}\n\n${formatSelectedElementPrompt(selectedElementInfo.value)}`
+}
+
+const handleToggleVisualEditMode = async () => {
+  if (visualEditMode.value) {
+    stopVisualEditMode()
+    return
+  }
+  if (!previewSrc.value || !previewFrameLoaded.value) {
+    message.warning('请先生成并加载预览页面，再进入可视化编辑模式')
+    return
+  }
+  visualEditMode.value = true
+  await nextTick()
+  const started = await waitForVisualEditorBridge()
+  if (!started) {
+    visualEditMode.value = false
+    message.warning('预览页尚未准备好，请稍后重试')
+    return
+  }
+  message.success('已进入可视化编辑模式，点击预览元素即可选中')
+}
+
+const handlePreviewFrameLoad = () => {
+  previewFrameLoaded.value = true
+  if (!visualEditMode.value) {
+    return
+  }
+  void waitForVisualEditorBridge()
+}
+
+watch(
+  () => previewSrc.value,
+  (nextValue) => {
+    previewFrameLoaded.value = false
+    if (nextValue) {
+      return
+    }
+    handleClearSelectedElement()
+    stopVisualEditMode()
+    disposeVisualEditorBridge()
+  },
+)
+
 const loadAppDetail = async () => {
   if (!/^\d+$/.test(appId.value)) {
     message.error('无效的应用编号')
     await router.replace('/')
     return false
   }
-
   try {
     const res = await getAppVo({ id: safeAppIdParam.value })
-
-
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '应用详情加载失败')
       return false
     }
-
     appDetail.value = res.data.data
-
     if (
       !isAdminViewer.value &&
       loginUser.value?.id &&
@@ -309,7 +471,6 @@ const loadAppDetail = async () => {
       await router.replace('/403')
       return false
     }
-
     return true
   } catch {
     message.error('应用详情加载失败，请稍后重试')
@@ -322,18 +483,15 @@ const loadLatestHistory = async () => {
   if (!/^\d+$/.test(appId.value)) {
     return null
   }
-
   try {
     const res = await listLatest({
       appId: safeAppIdParam.value,
       pageSize: CHAT_HISTORY_PAGE_SIZE,
     })
-
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '对话历史加载失败')
       return null
     }
-
     return applyInitialHistory(res.data.data)
   } catch {
     message.error('对话历史加载失败，请稍后重试')
@@ -351,7 +509,6 @@ const loadOlderHistory = async () => {
   ) {
     return
   }
-
   loadingMoreHistory.value = true
   try {
     const res = await listOlder({
@@ -360,12 +517,10 @@ const loadOlderHistory = async () => {
       beforeCreateTime: nextBeforeCreateTime.value,
       beforeId: safeBeforeIdParam.value,
     })
-
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '更早对话加载失败')
       return
     }
-
     prependOlderHistory(res.data.data)
   } catch {
     message.error('更早对话加载失败，请稍后重试')
@@ -378,33 +533,32 @@ const appendAssistantText = (messageId: string, chunks: string[]) => {
   if (!chunks.length) {
     return
   }
-
   const target = messages.value.find((item) => item.id === messageId)
   if (!target) {
     return
   }
-
   target.content += chunks.join('')
 }
 
-const sendMessage = async (content: string) => {
-  if (!content.trim() || sending.value || isReadOnlyView.value) {
+const sendMessage = async (displayContent: string, requestContent = displayContent) => {
+  if (!displayContent.trim() || sending.value || isReadOnlyView.value) {
     if (isReadOnlyView.value) {
       message.warning('管理员只读查看模式下不能继续生成该应用')
     }
     return
   }
 
-  const userMessage = createChatMessage('user', content.trim())
+  const userMessage = createChatMessage('user', displayContent.trim())
   const assistantMessage = createChatMessage('assistant', '')
   messages.value.push(userMessage, assistantMessage)
   draftMessage.value = ''
   sending.value = true
 
   try {
-    const url = new URL(`${API_BASE_URL}/app/chat/gen/code`)
+    const apiPath = `${API_BASE_URL}/app/chat/gen/code`
+    const url = new URL(apiPath, window.location.origin)
     url.searchParams.set('appId', appId.value)
-    url.searchParams.set('message', content.trim())
+    url.searchParams.set('message', requestContent.trim())
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -424,7 +578,6 @@ const sendMessage = async (content: string) => {
       if (done) {
         break
       }
-
       const chunk = decoder.decode(value, { stream: true })
       appendAssistantText(assistantMessage.id, consumeSseChunk(accumulator, chunk))
     }
@@ -450,7 +603,14 @@ const sendMessage = async (content: string) => {
 }
 
 const handleSend = async () => {
-  await sendMessage(draftMessage.value)
+  const rawMessage = draftMessage.value.trim()
+  if (!rawMessage) {
+    return
+  }
+  const requestMessage = buildRequestMessage(rawMessage)
+  await sendMessage(rawMessage, requestMessage)
+  handleClearSelectedElement()
+  stopVisualEditMode()
 }
 
 const handleLoadMoreHistory = async () => {
@@ -464,18 +624,15 @@ const handleDeploy = async () => {
     }
     return
   }
-
   deploying.value = true
   try {
     const res = await deployApp({
       appId: safeAppIdParam.value,
     })
-
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '部署失败')
       return
     }
-
     deployedUrlFromAction.value = String(res.data.data)
     message.success('部署成功，已生成访问地址')
     await loadAppDetail()
@@ -491,12 +648,10 @@ const handleDownloadCode = async () => {
     message.warning('应用信息尚未加载完成')
     return
   }
-
   if (isReadOnlyView.value) {
     message.warning('管理员只读查看模式下不能下载非本人应用代码')
     return
   }
-
   downloadingCode.value = true
   try {
     const response = await downloadAppCode(
@@ -507,7 +662,6 @@ const handleDownloadCode = async () => {
         responseType: 'blob',
       },
     )
-
     const zipBlob =
       response.data instanceof Blob
         ? response.data
@@ -517,7 +671,6 @@ const handleDownloadCode = async () => {
       response.headers?.['content-disposition'],
       fallbackBaseName,
     )
-
     triggerBlobDownload(zipBlob, filename)
     message.success('代码包开始下载')
   } catch {
@@ -532,17 +685,15 @@ onMounted(async () => {
   if (!success) {
     return
   }
-
   const initialHistoryCount = await loadLatestHistory()
   pageReady.value = true
-
-  if (
-    initialHistoryCount === 0 &&
-    isOwnApp.value &&
-    appDetail.value?.initPrompt?.trim()
-  ) {
+  if (initialHistoryCount === 0 && isOwnApp.value && appDetail.value?.initPrompt?.trim()) {
     await sendMessage(appDetail.value.initPrompt.trim())
   }
+})
+
+onUnmounted(() => {
+  disposeVisualEditorBridge()
 })
 </script>
 
@@ -599,6 +750,10 @@ onMounted(async () => {
   background: rgb(236 253 245 / 88%);
   border: 1px solid rgb(16 185 129 / 16%);
   border-radius: 16px;
+}
+
+.selected-element-alert {
+  margin-top: -2px;
 }
 
 .preview-column {

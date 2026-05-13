@@ -30,7 +30,7 @@ const props = withDefaults(
   {
     loading: false,
     disabled: false,
-    placeholder: '请描述你想生成的网站，越详细效果越好哦',
+    placeholder: '请描述你想生成的网站，越详细效果越好哦。',
   },
 )
 
