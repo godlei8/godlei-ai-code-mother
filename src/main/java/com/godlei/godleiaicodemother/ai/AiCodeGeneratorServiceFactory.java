@@ -39,11 +39,14 @@ import java.util.Set;
 @Slf4j
 public class AiCodeGeneratorServiceFactory {
 
-    @Resource
-    private ChatModel chatModel;
+    private static final String OPEN_AI_CHAT_MODEL_BEAN_NAME = "openAiChatModel";
+    private static final String STREAMING_CHAT_MODEL_BEAN_NAME = "streamingChatModelPrototype";
+    private static final String REASONING_STREAMING_CHAT_MODEL_BEAN_NAME = "reasoningStreamingChatModelPrototype";
+    private static final int CHAT_MEMORY_MAX_MESSAGES = 20;
+    private static final int MAX_SEQUENTIAL_TOOL_INVOCATIONS = 20;
 
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
+    @Resource(name = OPEN_AI_CHAT_MODEL_BEAN_NAME)
+    private ChatModel chatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -77,44 +80,16 @@ public class AiCodeGeneratorServiceFactory {
     private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
         log.info("Create AI service for appId: {}, codeGenType: {}", appId, codeGenType);
 
-        MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
-                .id(appId)
-                .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
-                .build();
+        MessageWindowChatMemory chatMemory = createPersistentChatMemory(appId);
 
         return switch (codeGenType) {
             case VUE_PROJECT -> {
                 resetInvalidVueChatMemoryIfNeeded(appId, chatMemory);
-                StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean(
-                        "reasoningStreamingChatModelPrototype",
-                        StreamingChatModel.class
-                );
-                yield AiServices.builder(AiCodeGeneratorService.class)
-                        .chatModel(chatModel)
-                        .streamingChatModel(reasoningStreamingChatModel)
-                        .chatMemoryProvider(memoryId -> chatMemory)
-                        .tools(toolManager.getAllTools())
-                        .hallucinatedToolNameStrategy(toolExecutionRequest ->
-                                ToolExecutionResultMessage.from(
-                                        toolExecutionRequest,
-                                        "Error: there is no tool called " + toolExecutionRequest.name()
-                                )
-                        )
-                        .maxSequentialToolsInvocations(20)
-                        .build();
+                yield buildVueProjectService(chatMemory);
             }
             case HTML, MULTI_FILE -> {
-                chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
-                StreamingChatModel streamingChatModel = SpringContextUtil.getBean(
-                        "streamingChatModelPrototype",
-                        StreamingChatModel.class
-                );
-                yield AiServices.builder(AiCodeGeneratorService.class)
-                        .chatModel(chatModel)
-                        .streamingChatModel(streamingChatModel)
-                        .chatMemory(chatMemory)
-                        .build();
+                chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, CHAT_MEMORY_MAX_MESSAGES);
+                yield buildStatefulService(chatMemory);
             }
             default -> throw new BusinessException(
                     ErrorCode.SYSTEM_ERROR,
@@ -125,41 +100,74 @@ public class AiCodeGeneratorServiceFactory {
 
     @Bean
     public AiCodeGeneratorService AiCodeGeneratorService() {
+        AiCodeGeneratorService statelessService = createStatelessAiCodeGeneratorService();
         return new AiCodeGeneratorService() {
             @Override
             public HtmlCodeResult generateHtmlCode(String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateHtmlCode(userMessage);
+                return statelessService.generateHtmlCode(userMessage);
             }
 
             @Override
             public MultiFileCodeResult generateMultiFileCode(String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateMultiFileCode(userMessage);
+                return statelessService.generateMultiFileCode(userMessage);
             }
 
             @Override
             public Flux<String> generateHtmlCodeStream(String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateHtmlCodeStream(userMessage);
+                return statelessService.generateHtmlCodeStream(userMessage);
             }
 
             @Override
             public Flux<String> generateMultiFileCodeStream(String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateMultiFileCodeStream(userMessage);
+                return statelessService.generateMultiFileCodeStream(userMessage);
             }
 
             @Override
             public AppNameResult generateAppName(String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateAppName(userMessage);
+                return statelessService.generateAppName(userMessage);
             }
 
             @Override
             public TokenStream generateVueProjectCodeStream(long appId, String userMessage) {
-                return createStatelessAiCodeGeneratorService().generateVueProjectCodeStream(appId, userMessage);
+                return statelessService.generateVueProjectCodeStream(appId, userMessage);
             }
         };
     }
 
     private String buildCacheKey(long appId, CodeGenTypeEnum codeGenType) {
         return appId + "_" + codeGenType.getValue();
+    }
+
+    private MessageWindowChatMemory createPersistentChatMemory(long appId) {
+        return MessageWindowChatMemory.builder()
+                .id(appId)
+                .chatMemoryStore(redisChatMemoryStore)
+                .maxMessages(CHAT_MEMORY_MAX_MESSAGES)
+                .build();
+    }
+
+    private AiCodeGeneratorService buildVueProjectService(MessageWindowChatMemory chatMemory) {
+        return AiServices.builder(AiCodeGeneratorService.class)
+                .chatModel(chatModel)
+                .streamingChatModel(getBean(REASONING_STREAMING_CHAT_MODEL_BEAN_NAME, StreamingChatModel.class))
+                .chatMemoryProvider(memoryId -> chatMemory)
+                .tools(toolManager.getAllTools())
+                .hallucinatedToolNameStrategy(toolExecutionRequest ->
+                        ToolExecutionResultMessage.from(
+                                toolExecutionRequest,
+                                "Error: there is no tool called " + toolExecutionRequest.name()
+                        )
+                )
+                .maxSequentialToolsInvocations(MAX_SEQUENTIAL_TOOL_INVOCATIONS)
+                .build();
+    }
+
+    private AiCodeGeneratorService buildStatefulService(MessageWindowChatMemory chatMemory) {
+        return AiServices.builder(AiCodeGeneratorService.class)
+                .chatModel(chatModel)
+                .streamingChatModel(getBean(STREAMING_CHAT_MODEL_BEAN_NAME, StreamingChatModel.class))
+                .chatMemory(chatMemory)
+                .build();
     }
 
     private void resetInvalidVueChatMemoryIfNeeded(long appId, MessageWindowChatMemory chatMemory) {
@@ -214,14 +222,14 @@ public class AiCodeGeneratorServiceFactory {
     }
 
     private AiCodeGeneratorService createStatelessAiCodeGeneratorService() {
-        StreamingChatModel streamingChatModel = SpringContextUtil.getBean(
-                "streamingChatModelPrototype",
-                StreamingChatModel.class
-        );
         return AiServices.builder(AiCodeGeneratorService.class)
                 .chatModel(chatModel)
-                .streamingChatModel(streamingChatModel)
-                .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(20))
+                .streamingChatModel(getBean(STREAMING_CHAT_MODEL_BEAN_NAME, StreamingChatModel.class))
+                .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(CHAT_MEMORY_MAX_MESSAGES))
                 .build();
+    }
+
+    private <T> T getBean(String beanName, Class<T> beanType) {
+        return SpringContextUtil.getBean(beanName, beanType);
     }
 }

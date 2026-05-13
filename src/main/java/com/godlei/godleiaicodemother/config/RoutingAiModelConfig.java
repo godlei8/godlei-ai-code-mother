@@ -1,25 +1,20 @@
 package com.godlei.godleiaicodemother.config;
 
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
-import java.util.List;
-
 /**
- * 流式对话模型配置
+ * 智能路由模型配置
  */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.routing-chat-model")
 @Data
-public class StreamingChatModelConfig {
-
-//    @Resource
-//    private AiModelMonitorListener aiModelMonitorListener;
+public class RoutingAiModelConfig {
 
     private String baseUrl;
 
@@ -31,25 +26,24 @@ public class StreamingChatModelConfig {
 
     private Double temperature;
 
-    private boolean logRequests;
+    private Boolean logRequests = false;
 
-    private boolean logResponses;
+    private Boolean logResponses = false;
 
     /**
-     * 流式模型
+     * 创建用于路由判断的ChatModel
      */
     @Bean
     @Scope("prototype")
-    public StreamingChatModel streamingChatModelPrototype() {
-        return OpenAiStreamingChatModel.builder()
+    public ChatModel routingChatModelPrototype() {
+        return OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .baseUrl(baseUrl)
                 .modelName(modelName)
+                .baseUrl(baseUrl)
                 .maxTokens(maxTokens)
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
-//                .listeners(List.of(aiModelMonitorListener))
                 .build();
     }
 }
