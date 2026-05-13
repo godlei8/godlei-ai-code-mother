@@ -8,7 +8,14 @@
           :description="headerDescription"
           title-tag="h1"
           class="chat-header"
-        />
+        >
+          <template #extra>
+            <div class="codegen-badge">
+              <span class="codegen-badge-label">生成类型</span>
+              <strong>{{ codeGenTypeLabel }}</strong>
+            </div>
+          </template>
+        </PageSectionHeader>
 
         <AppChatMessageList
           :messages="messages"
@@ -114,6 +121,7 @@ import { deployApp, downloadAppCode, getAppVo } from '@/api/appController'
 import { API_BASE_URL, getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { consumeSseChunk, createSseAccumulator, flushSseAccumulator } from '@/utils/appStream'
+import { formatCodeGenType } from '@/utils/codeGenTypes'
 import { resolveDownloadFilename, triggerBlobDownload } from '@/utils/download'
 
 type ChatMessage = {
@@ -170,6 +178,8 @@ const headerDescription = computed(() => {
   }
   return '左侧与 AI 持续对话生成页面，右侧会在生成完成后自动刷新网站预览。'
 })
+
+const codeGenTypeLabel = computed(() => formatCodeGenType(appDetail.value?.codeGenType))
 
 const previewSrc = computed(() => {
   if (!previewReady.value || !appDetail.value?.id || !appDetail.value.codeGenType) {
@@ -553,6 +563,34 @@ onMounted(async () => {
   gap: 14px;
   min-height: calc(100vh - 154px);
   padding: 18px;
+}
+
+.codegen-badge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 132px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 94%), rgb(239 246 255 / 92%));
+  border: 1px solid rgb(96 165 250 / 22%);
+  border-radius: 16px;
+  box-shadow: 0 14px 28px rgb(59 130 246 / 10%);
+}
+
+.codegen-badge-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.codegen-badge strong {
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .deploy-banner {
