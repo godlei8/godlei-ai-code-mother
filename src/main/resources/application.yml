@@ -73,3 +73,12 @@ langchain4j:
         temperature: 0.1
         log-requests: true
         log-responses: true
+    # 智能路由 AI 模型配置（用于简单的分类任务）
+    routing-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: <你的key>
+      model-name: deepseek-v4-flash
+      max-tokens: 1000
+      temperature: 0.1
+      log-requests: true
+      log-responses: true

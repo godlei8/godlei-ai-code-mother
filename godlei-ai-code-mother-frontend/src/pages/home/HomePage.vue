@@ -326,7 +326,7 @@ const loadMyApps = async () => {
       message.error(res.data?.message || '我的应用加载失败')
       return
     }
-    myApps.value = (res.data.data.records ?? []).map((item) =>
+    myApps.value = (res.data.data.records ?? []).map((item: API.AppVO) =>
       hydrateOwnedAppCreator(item, loginUserStore.loginUser),
     )
     myTotal.value = res.data.data.totalRow ?? 0

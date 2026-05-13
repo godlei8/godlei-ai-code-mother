@@ -103,6 +103,44 @@ a {
   margin-bottom: 18px;
 }
 
+.management-table-shell {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 -6px;
+  padding: 0 6px 8px;
+}
+
+.management-table-shell :where(.ant-table-wrapper) {
+  min-width: 100%;
+}
+
+.management-table-shell :where(.ant-table) {
+  background: transparent;
+}
+
+.management-table-shell :where(.ant-table-container) {
+  border-radius: 18px;
+}
+
+.management-table-shell :where(.ant-table-thead > tr > th) {
+  white-space: nowrap;
+}
+
+.management-table-shell :where(.ant-table-tbody > tr > td) {
+  vertical-align: middle;
+}
+
+.management-link-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.management-link-actions :where(.ant-btn-link) {
+  padding-inline: 0 6px;
+}
+
 :where(.ant-btn-primary) {
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
   box-shadow: 0 12px 24px rgb(37 99 235 / 20%);
@@ -119,5 +157,10 @@ a {
 @media (max-width: 860px) {
   .management-section-header {
     margin-bottom: 16px;
+  }
+
+  .management-table-shell {
+    margin: 0 -4px;
+    padding: 0 4px 6px;
   }
 }

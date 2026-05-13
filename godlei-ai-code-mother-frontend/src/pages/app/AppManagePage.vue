@@ -57,7 +57,7 @@
         title-tag="h3"
       />
 
-      <div class="table-shell">
+      <div class="management-table-shell">
         <a-table
           row-key="id"
           :columns="columns"
@@ -106,7 +106,7 @@
             </template>
 
             <template v-else-if="column.key === 'action'">
-              <a-space class="action-cell-space" size="small">
+              <a-space class="management-link-actions" size="small">
                 <a-button type="link" @click="openDetailModal(record)">详情</a-button>
                 <a-button type="link" @click="router.push(`/app/edit/${record.id}`)">编辑</a-button>
                 <a-button type="link" :disabled="record.priority === 99" @click="handleFeature(record)">
@@ -361,13 +361,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.table-shell {
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin: 0 -6px;
-  padding: 0 6px 8px;
-}
-
 .cover-cell {
   display: flex;
   align-items: center;
@@ -400,43 +393,5 @@ onMounted(() => {
 .app-name-cell {
   color: #0f172a;
   font-weight: 600;
-}
-
-.action-cell-space {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-.action-cell-space :deep(.ant-btn-link) {
-  padding-inline: 0 6px;
-}
-
-.management-table-panel :deep(.ant-table-wrapper) {
-  width: 100%;
-}
-
-.management-table-panel :deep(.ant-table) {
-  background: transparent;
-}
-
-.management-table-panel :deep(.ant-table-container) {
-  border-radius: 18px;
-}
-
-.management-table-panel :deep(.ant-table-thead > tr > th) {
-  white-space: nowrap;
-}
-
-.management-table-panel :deep(.ant-table-tbody > tr > td) {
-  vertical-align: middle;
-}
-
-@media (max-width: 900px) {
-  .table-shell {
-    margin: 0 -4px;
-    padding: 0 4px 6px;
-  }
 }
 </style>

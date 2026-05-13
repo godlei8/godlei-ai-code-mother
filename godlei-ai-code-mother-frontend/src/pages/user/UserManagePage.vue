@@ -47,39 +47,42 @@
         </template>
       </PageSectionHeader>
 
-      <a-table
-        row-key="id"
-        :columns="columns"
-        :data-source="records"
-        :pagination="pagination"
-        :loading="tableLoading"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'userAvatar'">
-            <a-avatar :src="record.userAvatar">
-              {{ (record.userName || record.userAccount || 'U').slice(0, 1).toUpperCase() }}
-            </a-avatar>
-          </template>
+      <div class="management-table-shell">
+        <a-table
+          row-key="id"
+          :columns="columns"
+          :data-source="records"
+          :pagination="pagination"
+          :loading="tableLoading"
+          :scroll="{ x: 1120 }"
+          @change="handleTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'userAvatar'">
+              <a-avatar :src="record.userAvatar">
+                {{ (record.userName || record.userAccount || 'U').slice(0, 1).toUpperCase() }}
+              </a-avatar>
+            </template>
 
-          <template v-else-if="column.key === 'userRole'">
-            <a-tag :color="record.userRole === 'admin' ? 'blue' : 'green'">
-              {{ record.userRole === 'admin' ? '管理员' : '普通用户' }}
-            </a-tag>
-          </template>
+            <template v-else-if="column.key === 'userRole'">
+              <a-tag :color="record.userRole === 'admin' ? 'blue' : 'green'">
+                {{ record.userRole === 'admin' ? '管理员' : '普通用户' }}
+              </a-tag>
+            </template>
 
-          <template v-else-if="column.key === 'createTime'">
-            {{ formatAppDateTime(record.createTime) }}
-          </template>
+            <template v-else-if="column.key === 'createTime'">
+              {{ formatAppDateTime(record.createTime) }}
+            </template>
 
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" @click="openEditModal(record)">编辑</a-button>
-              <a-button danger type="link" @click="handleDelete(record)">删除</a-button>
-            </a-space>
+            <template v-else-if="column.key === 'action'">
+              <a-space class="management-link-actions" size="small">
+                <a-button type="link" @click="openEditModal(record)">编辑</a-button>
+                <a-button danger type="link" @click="handleDelete(record)">删除</a-button>
+              </a-space>
+            </template>
           </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </section>
 
     <UserFormModal
@@ -138,12 +141,12 @@ const roleOptions = [
 
 const columns = [
   { title: '头像', dataIndex: 'userAvatar', key: 'userAvatar', width: 88 },
-  { title: '用户账号', dataIndex: 'userAccount', key: 'userAccount' },
-  { title: '用户昵称', dataIndex: 'userName', key: 'userName' },
-  { title: '个人简介', dataIndex: 'userProfile', key: 'userProfile', ellipsis: true },
+  { title: '用户账号', dataIndex: 'userAccount', key: 'userAccount', width: 190 },
+  { title: '用户昵称', dataIndex: 'userName', key: 'userName', width: 160 },
+  { title: '个人简介', dataIndex: 'userProfile', key: 'userProfile', width: 280, ellipsis: true },
   { title: '用户角色', dataIndex: 'userRole', key: 'userRole', width: 120 },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 240 },
-  { title: '操作', key: 'action', width: 160 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 210 },
+  { title: '操作', key: 'action', width: 140, align: 'center' },
 ]
 
 const pagination = computed<TablePaginationConfig>(() => ({

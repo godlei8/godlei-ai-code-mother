@@ -5,6 +5,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.godlei.godleiaicodemother.ai.AiCodeGenTypeRoutingService;
+import com.godlei.godleiaicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
 import com.godlei.godleiaicodemother.core.builder.VueProjectBuilder;
 import com.godlei.godleiaicodemother.core.handler.StreamHandlerExecutor;
@@ -66,6 +68,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private VueProjectBuilder vueProjectBuilder;
 
+    @Resource
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+
     private static final String DEFAULT_APP_NAME = "未命名应用";
 
     private static final String COL_CREATE_TIME = "createTime";
@@ -100,11 +105,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 根据 用户描述 生成 应用name
         String appName = StrUtil.isBlank(appAddRequest.getAppName()) ? DEFAULT_APP_NAME : aiCodeGeneratorFacade.generateAppName(appAddRequest.getInitPrompt());
+        // 使用 AI 智能选择代码生成类型（多例模式）
+        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
         App app = App.builder()
                 .appName(appName)
                 .initPrompt(initPrompt)
                 .priority(AppConstant.DEFAULT_APP_PRIORITY)
-                .codeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue())
+                .codeGenType(selectedCodeGenType.getValue())
                 .userId(loginUser.getId())
                 .build();
         boolean ok = this.save(app);

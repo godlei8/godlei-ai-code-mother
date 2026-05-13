@@ -37,39 +37,42 @@
         title-tag="h3"
       />
 
-      <a-table
-        row-key="id"
-        :columns="columns"
-        :data-source="records"
-        :pagination="pagination"
-        :loading="tableLoading"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'messageType'">
-            <a-tag :color="resolveMessageTypeColor(record.messageType)">
-              {{ resolveMessageTypeLabel(record.messageType) }}
-            </a-tag>
-          </template>
+      <div class="management-table-shell">
+        <a-table
+          row-key="id"
+          :columns="columns"
+          :data-source="records"
+          :pagination="pagination"
+          :loading="tableLoading"
+          :scroll="{ x: 1320 }"
+          @change="handleTableChange"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'messageType'">
+              <a-tag :color="resolveMessageTypeColor(record.messageType)">
+                {{ resolveMessageTypeLabel(record.messageType) }}
+              </a-tag>
+            </template>
 
-          <template v-else-if="column.key === 'message'">
-            <span class="message-cell">{{ record.message || '-' }}</span>
-          </template>
+            <template v-else-if="column.key === 'message'">
+              <span class="message-cell">{{ record.message || '-' }}</span>
+            </template>
 
-          <template v-else-if="column.key === 'createTime'">
-            {{ formatAppDateTime(record.createTime) }}
-          </template>
+            <template v-else-if="column.key === 'createTime'">
+              {{ formatAppDateTime(record.createTime) }}
+            </template>
 
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" @click="openDetailModal(record)">详情</a-button>
-              <a-button type="link" :disabled="!record.appId" @click="openAppChat(record)">
-                查看应用
-              </a-button>
-            </a-space>
+            <template v-else-if="column.key === 'action'">
+              <a-space class="management-link-actions" size="small">
+                <a-button type="link" @click="openDetailModal(record)">详情</a-button>
+                <a-button type="link" :disabled="!record.appId" @click="openAppChat(record)">
+                  查看应用
+                </a-button>
+              </a-space>
+            </template>
           </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </section>
 
     <a-modal
@@ -141,9 +144,9 @@ const columns = [
   { title: '应用编号', dataIndex: 'appId', key: 'appId', width: 160 },
   { title: '创建者', dataIndex: 'userId', key: 'userId', width: 160 },
   { title: '消息类型', dataIndex: 'messageType', key: 'messageType', width: 120 },
-  { title: '消息内容', dataIndex: 'message', key: 'message', ellipsis: true },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 240 },
-  { title: '操作', key: 'action', width: 180 },
+  { title: '消息内容', dataIndex: 'message', key: 'message', ellipsis: true, width: 320 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 210 },
+  { title: '操作', key: 'action', width: 160, align: 'center' },
 ]
 
 const pagination = computed<TablePaginationConfig>(() => ({

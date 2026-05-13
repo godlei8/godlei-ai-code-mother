@@ -45,6 +45,14 @@
               编辑信息
             </a-button>
             <a-button
+              class="preview-action-button"
+              :loading="downloadingCode"
+              :disabled="!appDetail?.id || isReadOnlyView"
+              @click="handleDownloadCode"
+            >
+              下载代码
+            </a-button>
+            <a-button
               class="preview-action-button preview-deploy-button"
               type="primary"
               :loading="deploying"
@@ -102,10 +110,11 @@ import AppChatInput from '@/components/app/AppChatInput.vue'
 import AppChatMessageList from '@/components/app/AppChatMessageList.vue'
 import AppPreviewFrame from '@/components/app/AppPreviewFrame.vue'
 import PageSectionHeader from '@/components/common/PageSectionHeader.vue'
-import { deployApp, getAppVo } from '@/api/appController'
+import { deployApp, downloadAppCode, getAppVo } from '@/api/appController'
 import { API_BASE_URL, getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { consumeSseChunk, createSseAccumulator, flushSseAccumulator } from '@/utils/appStream'
+import { resolveDownloadFilename, triggerBlobDownload } from '@/utils/download'
 
 type ChatMessage = {
   id: string
@@ -125,6 +134,7 @@ const { accessRole, loginUser } = storeToRefs(loginUserStore)
 const pageReady = ref(false)
 const sending = ref(false)
 const deploying = ref(false)
+const downloadingCode = ref(false)
 const previewReady = ref(false)
 const previewVersion = ref(Date.now())
 const draftMessage = ref('')
@@ -138,6 +148,10 @@ const messages = ref<ChatMessage[]>([])
 
 const appId = computed(() => String(route.params.id ?? '').trim())
 const safeAppId = computed<API.LongId>(() => appId.value)
+const safeAppIdParam = computed(() => safeAppId.value as unknown as number)
+const safeBeforeIdParam = computed(() =>
+  nextBeforeId.value ? (nextBeforeId.value as unknown as number) : undefined,
+)
 const isAdminViewer = computed(() => accessRole.value === 'admin')
 const isOwnApp = computed(() => {
   if (!loginUser.value?.id || !appDetail.value?.userId) {
@@ -266,7 +280,8 @@ const loadAppDetail = async () => {
   }
 
   try {
-    const res = await getAppVo({ id: safeAppId.value })
+    const res = await getAppVo({ id: safeAppIdParam.value })
+
 
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '应用详情加载失败')
@@ -300,7 +315,7 @@ const loadLatestHistory = async () => {
 
   try {
     const res = await listLatest({
-      appId: safeAppId.value,
+      appId: safeAppIdParam.value,
       pageSize: CHAT_HISTORY_PAGE_SIZE,
     })
 
@@ -330,10 +345,10 @@ const loadOlderHistory = async () => {
   loadingMoreHistory.value = true
   try {
     const res = await listOlder({
-      appId: safeAppId.value,
+      appId: safeAppIdParam.value,
       pageSize: CHAT_HISTORY_PAGE_SIZE,
       beforeCreateTime: nextBeforeCreateTime.value,
-      beforeId: nextBeforeId.value,
+      beforeId: safeBeforeIdParam.value,
     })
 
     if (res.data?.code !== 0 || !res.data.data) {
@@ -443,7 +458,7 @@ const handleDeploy = async () => {
   deploying.value = true
   try {
     const res = await deployApp({
-      appId: safeAppId.value,
+      appId: safeAppIdParam.value,
     })
 
     if (res.data?.code !== 0 || !res.data.data) {
@@ -458,6 +473,47 @@ const handleDeploy = async () => {
     message.error('部署失败，请稍后重试')
   } finally {
     deploying.value = false
+  }
+}
+
+const handleDownloadCode = async () => {
+  if (!appDetail.value?.id) {
+    message.warning('应用信息尚未加载完成')
+    return
+  }
+
+  if (isReadOnlyView.value) {
+    message.warning('管理员只读查看模式下不能下载非本人应用代码')
+    return
+  }
+
+  downloadingCode.value = true
+  try {
+    const response = await downloadAppCode(
+      {
+        appId: String(appDetail.value.id) as unknown as number,
+      },
+      {
+        responseType: 'blob',
+      },
+    )
+
+    const zipBlob =
+      response.data instanceof Blob
+        ? response.data
+        : new Blob([response.data], { type: 'application/zip' })
+    const fallbackBaseName = (appDetail.value.appName || `app-${appDetail.value.id}`).trim()
+    const filename = resolveDownloadFilename(
+      response.headers?.['content-disposition'],
+      fallbackBaseName,
+    )
+
+    triggerBlobDownload(zipBlob, filename)
+    message.success('代码包开始下载')
+  } catch {
+    message.error('下载代码失败，请稍后重试')
+  } finally {
+    downloadingCode.value = false
   }
 }
 

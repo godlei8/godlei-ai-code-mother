@@ -1,29 +1,38 @@
-import axios from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { message } from 'ant-design-vue'
 import { API_BASE_URL } from '@/config/env'
 import { parseApiJson } from '@/utils/jsonParser'
+
+type ApiResponseShape = {
+  code?: number
+  message?: string
+}
 
 const myAxios = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
   withCredentials: true,
-  transformResponse: [(data) => parseApiJson(data)],
+  transformResponse: [(data: unknown) => parseApiJson(data)],
 })
 
 myAxios.interceptors.request.use(
-  function (config) {
+  function (config: InternalAxiosRequestConfig) {
     return config
   },
-  function (error) {
+  function (error: AxiosError) {
     return Promise.reject(error)
   },
 )
 
 myAxios.interceptors.response.use(
-  function (response) {
+  function (response: AxiosResponse<ApiResponseShape>) {
     const { data } = response
 
-    if (data.code === 40100) {
+    if (data?.code === 40100) {
       const isAuthPage =
         window.location.pathname.includes('/auth/login') ||
         window.location.pathname.includes('/auth/register')
@@ -38,7 +47,7 @@ myAxios.interceptors.response.use(
 
     return response
   },
-  function (error) {
+  function (error: AxiosError<ApiResponseShape>) {
     if (error.response?.data?.message) {
       message.error(error.response.data.message)
     } else if (error.message) {

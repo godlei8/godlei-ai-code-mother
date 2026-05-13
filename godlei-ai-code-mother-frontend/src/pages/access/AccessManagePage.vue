@@ -24,15 +24,23 @@
         title-tag="h3"
       />
 
-      <a-table :columns="matrixColumns" :data-source="routeRows" :pagination="false" row-key="key">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
-            <a-tag :color="record[column.key] ? 'green' : 'default'">
-              {{ record[column.key] ? '允许' : '禁止' }}
-            </a-tag>
+      <div class="management-table-shell">
+        <a-table
+          :columns="matrixColumns"
+          :data-source="routeRows"
+          :pagination="false"
+          :scroll="{ x: 860 }"
+          row-key="key"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
+              <a-tag :color="record[column.key] ? 'green' : 'default'">
+                {{ record[column.key] ? '允许' : '禁止' }}
+              </a-tag>
+            </template>
           </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </section>
 
     <section class="glass-card management-table-panel">
@@ -43,15 +51,23 @@
         title-tag="h3"
       />
 
-      <a-table :columns="matrixColumns" :data-source="actionRows" :pagination="false" row-key="key">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
-            <a-tag :color="record[column.key] ? 'green' : 'default'">
-              {{ record[column.key] ? '允许' : '禁止' }}
-            </a-tag>
+      <div class="management-table-shell">
+        <a-table
+          :columns="matrixColumns"
+          :data-source="actionRows"
+          :pagination="false"
+          :scroll="{ x: 860 }"
+          row-key="key"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'guest' || column.key === 'user' || column.key === 'admin'">
+              <a-tag :color="record[column.key] ? 'green' : 'default'">
+                {{ record[column.key] ? '允许' : '禁止' }}
+              </a-tag>
+            </template>
           </template>
-        </template>
-      </a-table>
+        </a-table>
+      </div>
     </section>
   </div>
 </template>
@@ -81,8 +97,8 @@ const roleCards = [
 ]
 
 const matrixColumns = [
-  { title: '权限项', dataIndex: 'label', key: 'label' },
-  { title: '说明', dataIndex: 'description', key: 'description' },
+  { title: '权限项', dataIndex: 'label', key: 'label', width: 220 },
+  { title: '说明', dataIndex: 'description', key: 'description', width: 360 },
   { title: '游客', dataIndex: 'guest', key: 'guest', width: 100 },
   { title: '普通用户', dataIndex: 'user', key: 'user', width: 120 },
   { title: '管理员', dataIndex: 'admin', key: 'admin', width: 100 },

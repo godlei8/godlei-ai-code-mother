@@ -1,8 +1,6 @@
 declare namespace API {
-  type LongId = string
-
   type App = {
-    id?: LongId
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
@@ -10,7 +8,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: LongId
+    userId?: number
     editTime?: string
     createTime?: string
     updateTime?: string
@@ -27,25 +25,25 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: LongId
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
     codeGenType?: string
     deployKey?: string
     priority?: number
-    userId?: LongId
+    userId?: number
   }
 
   type AppAdminUpdateRequest = {
-    id?: LongId
+    id?: number
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppDeployRequest = {
-    appId?: LongId
+    appId?: number
   }
 
   type AppListPageRequest = {
@@ -57,12 +55,12 @@ declare namespace API {
   }
 
   type AppUserUpdateRequest = {
-    id?: LongId
+    id?: number
     appName?: string
   }
 
   type AppVO = {
-    id?: LongId
+    id?: number
     appName?: string
     cover?: string
     initPrompt?: string
@@ -70,7 +68,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: LongId
+    userId?: number
     editTime?: string
     createTime?: string
     updateTime?: string
@@ -108,7 +106,7 @@ declare namespace API {
 
   type BaseResponseLong = {
     code?: number
-    data?: LongId
+    data?: number
     message?: string
   }
 
@@ -153,17 +151,17 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    appId?: LongId
-    userId?: LongId
+    appId?: number
+    userId?: number
     messageType?: string
   }
 
   type ChatHistoryAdminVO = {
-    id?: LongId
+    id?: number
     message?: string
     messageType?: string
-    appId?: LongId
-    userId?: LongId
+    appId?: number
+    userId?: number
     createTime?: string
     appName?: string
   }
@@ -172,57 +170,61 @@ declare namespace API {
     records?: ChatHistoryVO[]
     hasMore?: boolean
     nextBeforeCreateTime?: string
-    nextBeforeId?: LongId
+    nextBeforeId?: number
   }
 
   type ChatHistoryLatestRequest = {
-    appId?: LongId
+    appId?: number
     pageSize?: number
   }
 
   type ChatHistoryOlderRequest = {
-    appId?: LongId
+    appId?: number
     pageSize?: number
     beforeCreateTime?: string
-    beforeId?: LongId
+    beforeId?: number
   }
 
   type ChatHistoryVO = {
-    id?: LongId
+    id?: number
     message?: string
     messageType?: string
-    appId?: LongId
-    userId?: LongId
+    appId?: number
+    userId?: number
     createTime?: string
   }
 
   type chatToGenCodeParams = {
-    appId: LongId
+    appId: number
     message: string
   }
 
   type DeleteRequest = {
-    id?: LongId
+    id?: number
+  }
+
+  type downloadAppCodeParams = {
+    appId: number
   }
 
   type getAppByIdAdminParams = {
-    id: LongId
+    id: number
   }
 
   type getAppVOParams = {
-    id: LongId
+    id: number
   }
 
   type getUserByIdParams = {
-    id: LongId
+    id: number
   }
 
   type getUserVOByIdParams = {
-    id: LongId
+    id: number
   }
 
   type LoginUserVO = {
-    id?: LongId
+    id?: number
     userAccount?: string
     userName?: string
     userAvatar?: string
@@ -266,7 +268,7 @@ declare namespace API {
   }
 
   type User = {
-    id?: LongId
+    id?: number
     userAccount?: string
     userPassword?: string
     userName?: string
@@ -309,7 +311,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: LongId
+    id?: number
     userName?: string
     userAccount?: string
     userProfile?: string
@@ -323,7 +325,7 @@ declare namespace API {
   }
 
   type UserUpdateRequest = {
-    id?: LongId
+    id?: number
     userName?: string
     userAvatar?: string
     userProfile?: string
@@ -331,7 +333,7 @@ declare namespace API {
   }
 
   type UserVO = {
-    id?: LongId
+    id?: number
     userAccount?: string
     userName?: string
     userAvatar?: string

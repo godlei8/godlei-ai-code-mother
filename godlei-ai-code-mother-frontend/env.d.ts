@@ -21,3 +21,7 @@ declare module 'json-bigint' {
 
   export default function JSONBigFactory(options?: JsonBigIntOptions): JsonBigIntInstance
 }
+
+declare namespace API {
+  type LongId = string | number
+}

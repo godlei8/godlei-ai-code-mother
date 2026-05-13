@@ -253,12 +253,9 @@ const handleAvatarFileChange = async (event: Event) => {
     return
   }
 
-  const formData = new FormData()
-  formData.append('file', file)
-
   avatarUploading.value = true
   try {
-    const res = await uploadMyAvatar(formData)
+    const res = await uploadMyAvatar({}, file)
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '头像上传失败')
       return

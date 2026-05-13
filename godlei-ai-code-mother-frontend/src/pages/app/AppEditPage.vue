@@ -102,6 +102,7 @@ const formState = reactive({
 
 const appId = computed(() => String(route.params.id ?? '').trim())
 const safeAppId = computed<API.LongId>(() => appId.value)
+const safeAppIdParam = computed(() => safeAppId.value as unknown as number)
 
 const editorMode = computed(() =>
   resolveAppEditorMode(accessRole.value, loginUser.value?.id, appDetail.value?.userId),
@@ -170,7 +171,7 @@ const loadAppDetail = async () => {
   }
 
   try {
-    const res = await getAppVo({ id: safeAppId.value })
+    const res = await getAppVo({ id: safeAppIdParam.value })
 
     if (res.data?.code !== 0 || !res.data.data) {
       message.error(res.data?.message || '应用详情加载失败')
@@ -204,7 +205,7 @@ const handleSubmit = async () => {
   try {
     if (isAdminMode.value) {
       const res = await updateAppAdmin({
-        id: safeAppId.value,
+        id: safeAppIdParam.value,
         appName: formState.appName.trim(),
         cover: formState.cover.trim(),
         priority: formState.priority,
@@ -216,7 +217,7 @@ const handleSubmit = async () => {
       }
     } else {
       const res = await updateMyApp({
-        id: safeAppId.value,
+        id: safeAppIdParam.value,
         appName: formState.appName.trim(),
       })
 
