@@ -82,3 +82,18 @@ langchain4j:
       temperature: 0.1
       log-requests: true
       log-responses: true
+    image-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: <你的key>
+      model-name: deepseek-v4-flash
+      max-tokens: 10000
+      temperature: 0.1
+      log-requests: true
+      log-responses: true
+# Pexels 图片搜索配置
+pexels:
+  api-key: <你的key>
+# 阿里云 DashScope 配置
+dashscope:
+  api-key: <Your API Key>
+  image-model: qwen-image-2.0
