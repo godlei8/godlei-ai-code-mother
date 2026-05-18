@@ -42,6 +42,7 @@ public class AiCodeGeneratorServiceFactory {
 
     private static final String OPEN_AI_CHAT_MODEL_BEAN_NAME = "openAiChatModel";
     private static final String STREAMING_CHAT_MODEL_BEAN_NAME = "streamingChatModelPrototype";
+    private static final String ROUTING_CHAT_MODEL_BEAN_NAME = "routingChatModelPrototype";
     private static final String REASONING_STREAMING_CHAT_MODEL_BEAN_NAME = "reasoningStreamingChatModelPrototype";
     private static final int CHAT_MEMORY_MAX_MESSAGES = 20;
     private static final int MAX_SEQUENTIAL_TOOL_INVOCATIONS = 20;
@@ -102,6 +103,7 @@ public class AiCodeGeneratorServiceFactory {
     @Bean
     public AiCodeGeneratorService AiCodeGeneratorService() {
         AiCodeGeneratorService statelessService = createStatelessAiCodeGeneratorService();
+        AiCodeGeneratorService statePuChatService = createPuChatService();
         return new AiCodeGeneratorService() {
             @Override
             public HtmlCodeResult generateHtmlCode(String userMessage) {
@@ -125,7 +127,7 @@ public class AiCodeGeneratorServiceFactory {
 
             @Override
             public AppNameResult generateAppName(String userMessage) {
-                return statelessService.generateAppName(userMessage);
+                return statePuChatService.generateAppName(userMessage);
             }
 
             @Override
@@ -236,6 +238,12 @@ public class AiCodeGeneratorServiceFactory {
                 .build();
     }
 
+    private AiCodeGeneratorService createPuChatService() {
+        return AiServices.builder(AiCodeGeneratorService.class)
+                .chatModel(getBean(ROUTING_CHAT_MODEL_BEAN_NAME, ChatModel.class))
+                .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(CHAT_MEMORY_MAX_MESSAGES))
+                .build();
+    }
     private <T> T getBean(String beanName, Class<T> beanType) {
         return SpringContextUtil.getBean(beanName, beanType);
     }
