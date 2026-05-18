@@ -3,6 +3,7 @@ package com.godlei.godleiaicodemother.ai;
 import cn.hutool.core.util.StrUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.godlei.godleiaicodemother.ai.guardrail.PromptSafetyInputGuardrail;
 import com.godlei.godleiaicodemother.ai.model.AppNameResult;
 import com.godlei.godleiaicodemother.ai.model.HtmlCodeResult;
 import com.godlei.godleiaicodemother.ai.model.MultiFileCodeResult;
@@ -158,7 +159,10 @@ public class AiCodeGeneratorServiceFactory {
                                 "Error: there is no tool called " + toolExecutionRequest.name()
                         )
                 )
+                .maxSequentialToolsInvocations(20) // 最多调用20次工具
                 .maxSequentialToolsInvocations(MAX_SEQUENTIAL_TOOL_INVOCATIONS)
+                .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加护轨
+                // .outputGuardrails(new RetryOutputGuardrail()) // 添加输出护轨，为了流式输出，这里不使用
                 .build();
     }
 
@@ -167,6 +171,9 @@ public class AiCodeGeneratorServiceFactory {
                 .chatModel(chatModel)
                 .streamingChatModel(getBean(STREAMING_CHAT_MODEL_BEAN_NAME, StreamingChatModel.class))
                 .chatMemory(chatMemory)
+                .maxSequentialToolsInvocations(20) // 最多调用20次工具
+                .inputGuardrails(new PromptSafetyInputGuardrail()) // 添加护轨
+                //  .outputGuardrails(new RetryOutputGuardrail()) // 添加输出护轨，为了流式输出，这里不使用
                 .build();
     }
 
