@@ -15,6 +15,8 @@ import com.godlei.godleiaicodemother.model.dto.app.*;
 import com.godlei.godleiaicodemother.model.entity.App;
 import com.godlei.godleiaicodemother.model.entity.User;
 import com.godlei.godleiaicodemother.model.vo.AppVO;
+import com.godlei.godleiaicodemother.ratelimter.annoation.RateLimit;
+import com.godlei.godleiaicodemother.ratelimter.enums.RateLimitType;
 import com.godlei.godleiaicodemother.service.AppService;
 import com.godlei.godleiaicodemother.service.ProjectDownloadService;
 import com.godlei.godleiaicodemother.service.UserService;
@@ -22,6 +24,7 @@ import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -85,6 +88,7 @@ public class AppController {
 
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rateInterval = 60, message = "AI对话过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        HttpServletRequest request) {
@@ -196,6 +200,11 @@ public class AppController {
      * 【用户】分页查询精选的应用列表（支持应用名称查询，每页最多 20 条）
      */
     @PostMapping("/list/page/vo/featured")
+    @Cacheable(
+            value = "good_app_page",
+            key = "T(com.godlei.godleiaicodemother.utils.CacheKeyUtils).generateKey(#appListPageRequest)",
+            condition = "#appListPageRequest.pageNum <= 10"
+    )
     public BaseResponse<Page<AppVO>> listFeaturedAppVOByPage(@RequestBody AppListPageRequest appListPageRequest) {
         ThrowUtils.throwIf(appListPageRequest == null, ErrorCode.PARAMS_ERROR);
         Page<AppVO> page = appService.listFeaturedAppVOByPage(appListPageRequest);

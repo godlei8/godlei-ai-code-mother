@@ -64,6 +64,10 @@
             <groupId>org.bsc.langgraph4j</groupId>
             <artifactId>langgraph4j-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bsc.langgraph4j</groupId>
+            <artifactId>langgraph4j-studio-springboot</artifactId>
+        </dependency>
         <!-- Add other langgraph4j modules if needed, e.g., langgraph4j-langchain4j -->
         <dependency>
             <groupId>com.mysql</groupId>
