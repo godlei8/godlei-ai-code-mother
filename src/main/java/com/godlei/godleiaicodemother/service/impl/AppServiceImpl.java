@@ -11,6 +11,8 @@ import com.godlei.godleiaicodemother.core.AiCodeGeneratorFacade;
 import com.godlei.godleiaicodemother.core.builder.VueProjectBuilder;
 import com.godlei.godleiaicodemother.core.handler.StreamHandlerExecutor;
 import com.godlei.godleiaicodemother.model.enums.CodeGenTypeEnum;
+import com.godlei.godleiaicodemother.monitor.MonitorContext;
+import com.godlei.godleiaicodemother.monitor.MonitorContextHolder;
 import com.godlei.godleiaicodemother.service.ScreenshotService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -340,9 +342,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String appName = app.getAppName();
         // 5. 调用 AI（持久化用户消息、成功后的 AI 全文、或失败时的错误信息）
         chatHistoryService.saveUserMessage(appId, app.getUserId(), message);
-        // 6. 调用 AI（持久化成功后的 AI 全文、或失败时的错误信息）
+        // 6. 设置监控上下文（用户 ID 和应用 ID）
+        MonitorContextHolder.setContext(
+                MonitorContext.builder()
+                        .userId(loginUser.getId().toString())
+                        .appId(appId.toString())
+                        .build()
+        );
+        // 7. 调用 AI（持久化成功后的 AI 全文、或失败时的错误信息）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message + "，应用名称就叫" + appName, codeGenTypeEnum, appId);
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        // 8. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum).
+                doFinally(signalType -> {
+                    // 9. 移除监控上下文
+                    MonitorContextHolder.clearContext();
+                });
     }
 
     /**
